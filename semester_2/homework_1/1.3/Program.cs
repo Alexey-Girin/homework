@@ -4,24 +4,26 @@ namespace _1._3
 {
     class Program
     {
-        static void Swap(ref int firstNum, ref int secondNum)
+        private static void Swap(ref int firstNum, ref int secondNum)
         {
             int num = firstNum;
             firstNum = secondNum;
             secondNum = num;
         }
 
-        static void ReadMas(ref int[] mas)
+        private static void ReadMas(int[] mas)
         {
-            var str = (Console.ReadLine()).Split(' ');
+            Console.Write("введите элементы массива:\n");
+            var strMas = Console.ReadLine().Split(' ');
             for (int i = 0; i < mas.Length; i++)
             {
-                mas[i] = int.Parse(str[i]);
+                mas[i] = int.Parse(strMas[i]);
             }
         }
 
-        static void WriteMas(int[] mas)
+        private static void WriteMas(int[] mas)
         {
+            Console.Write("отсортированный массив:\n");
             for (int i = 0; i < mas.Length; i++)
             {
                 Console.Write(mas[i] + " ");
@@ -30,7 +32,7 @@ namespace _1._3
             Console.Write("\n");
         }
 
-        static void InsertionSort(ref int []mas)
+        private static void InsertionSort(int[] mas)
         {
             for (int i = 1; i < mas.Length; i++)
             {
@@ -49,11 +51,11 @@ namespace _1._3
             }
         }
 
-        static void Test()
+        private static void Test()
         {
             int[] mas = { 4, 6, 0, 1, 2, 2, 3, 5 };
             int[] resultMas = { 0, 1, 2, 2, 3, 4, 5, 6 };
-            InsertionSort(ref mas);
+            InsertionSort(mas);
             for (int i = 0; i < mas.Length; i++)
             {
                 if (mas[i] != resultMas[i])
@@ -66,15 +68,15 @@ namespace _1._3
             Console.WriteLine("test true");
         }
     
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Test();
             Console.WriteLine("кол-во элементов массива: ");
             int num = int.Parse(Console.ReadLine());
             int[] mas = new int[num];
 
-            ReadMas(ref mas);
-            InsertionSort(ref mas);
+            ReadMas(mas);
+            InsertionSort(mas);
             WriteMas(mas);  
 
         }
