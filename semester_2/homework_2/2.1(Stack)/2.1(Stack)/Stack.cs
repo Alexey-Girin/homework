@@ -1,7 +1,10 @@
-﻿namespace SecondHomework.Task1
+﻿namespace StackNamespace
 {
     using System;
 
+    /// <summary>
+    /// Stack based on references.
+    /// </summary>
     public class Stack
     {
         private class StackElement
@@ -17,21 +20,26 @@
         }
 
         private StackElement head;
-        public int StackLenght;
 
         public Stack()
         {
             this.head = null;
-            this.StackLenght = 0;
         }
 
+        /// <summary>
+        /// Push value to stack
+        /// </summary>
+        /// <param name="value">Value to be pushed</param>
         public void Push(int value)
         {
             StackElement newElement = new StackElement(value, head);
             head = newElement;
-            StackLenght++;
         }
 
+        /// <summary>
+        /// Pop value from stack
+        /// </summary>
+        /// <returns>Popped value</returns>
         public int Pop()
         {
             if (IsEmpty())
@@ -44,7 +52,11 @@
             return popElement;
         }
 
-        public int ReadHeadElement()
+        /// <summary>
+        /// Peek value from stack
+        /// </summary>
+        /// <returns>Peeked value</returns>
+        public int Peek()
         {
             if (IsEmpty())
             {
@@ -54,23 +66,13 @@
             return head.Value;
         }
 
+        /// <summary>
+        /// Check stack for emptiness
+        /// </summary>
+        /// <returns>True is empty</returns>
         public bool IsEmpty()
         {
             return head == null;
-        }
-
-        public void PrintStack()
-        {
-            Console.Write("stack:\n");
-
-            StackElement positionElement = head;
-            while (positionElement != null)
-            {
-                Console.Write(positionElement.Value + " ");
-                positionElement = positionElement.Next;
-            }
-           
-            Console.Write("\n");
         }
     }
 }
