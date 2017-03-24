@@ -1,0 +1,68 @@
+﻿namespace HashTableNamespace 
+{
+    using ListNamespace;
+
+    /// <summary>
+    /// Реализация хеш-таблицы.
+    /// </summary>
+    public class HashTable
+    {
+        private uint size = 32; 
+        public List[] mas;
+        
+        public HashTable()
+        {
+            mas = new List[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                mas[i] = new List();
+            }
+        }
+
+        /// <summary>
+        /// Добавление значения в хеш-таблицу.
+        /// </summary>
+        /// <param name="value">Добавляемое значение.</param>
+        public void Add(string value)
+        {
+            mas[Hashing(value)].Add(value);
+        }
+
+        /// <summary>
+        /// Удаление значение из хеш-таблицы. 
+        /// </summary>
+        /// <param name="value">Удаляемое значение.</param>
+        public void Delete(string value)
+        {
+            mas[Hashing(value)].Delete(value);
+        }
+
+        /// <summary>
+        /// Проверка на принадлежность хеш-таблице.
+        /// </summary>
+        /// <param name="value">Проверяемое значение.</param>
+        /// <returns>True если принадлежит.</returns>
+        public bool IsBelong(string value)
+        {
+            return mas[Hashing(value)].IsBelong(value);
+        }
+
+        /// <summary>
+        /// Хеш-функция. 
+        /// </summary>
+        /// <param name="value">Ключ.</param>
+        /// <returns>Хеш.</returns>
+        private uint Hashing(string value)
+        {
+            uint hash = 2139062143;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                hash = 37 * hash + value[i];
+            }
+
+            return  hash % size;
+        }
+    }
+}
