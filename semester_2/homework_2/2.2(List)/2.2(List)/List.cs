@@ -1,15 +1,18 @@
-﻿using System;
-
-namespace SecondHomework.Task2
+﻿namespace ListNamespace
 {
-    class List
+    using System;
+
+    /// <summary>
+    /// List based on references. 
+    /// </summary>
+    public class List
     {
-        class ListElement
+        private class ListElement
         {
             public int Value;
             public ListElement Next;
 
-            public ListElement (int value, ListElement next)
+            public ListElement(int value, ListElement next)
             {
                 this.Value = value;
                 this.Next = next;
@@ -17,20 +20,40 @@ namespace SecondHomework.Task2
         }
 
         private ListElement head;
-        public int ListLenght;
 
         public List()
         {
             this.head = null;
         }
 
+        /// <summary>
+        /// Add value to list.
+        /// </summary>
+        /// <param name="value">Value to be added</param>
         public void Add(int value)
         {
             ListElement newElement = new ListElement(value, head);
             head = newElement;
-            ListLenght++;
         }
 
+        /// <summary>
+        /// Check list for emptiness.
+        /// </summary>
+        /// <returns>If list is empty then true.</returns>
+        public bool IsEmpty()
+        {
+            if(head == null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Delete value from list.
+        /// </summary>
+        /// <param name="value">Value to be deleted.</param>
         public void Delete(int value)
         {
             if (head == null)
@@ -56,9 +79,14 @@ namespace SecondHomework.Task2
                 position = position.Next;
             }
 
-            Console.WriteLine("value not found");
+            Console.WriteLine("Value not found");
         }
 
+        /// <summary>
+        /// Сheck for the presence of value in list.
+        /// </summary>
+        /// <param name="value">Value belongs to list.</param>
+        /// <returns></returns>
         public bool Find(int value)
         {
             ListElement position = head;
@@ -73,23 +101,6 @@ namespace SecondHomework.Task2
             }
 
             return false;
-        }
-
-        public void Print()
-        {
-            Console.WriteLine("list:");
-
-            ListElement position = head;
-            while (position != null)
-            {
-                Console.Write(position.Value + " ");
-                position = position.Next;
-            }
-        }
-
-        public void DeleteList()
-        {
-            head = null;
         }
     }
 }
