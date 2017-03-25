@@ -1,28 +1,27 @@
-﻿namespace StackOnArrayNamespace
+﻿namespace StackCalculator
 {
     using System;
-    using StackNamespace;
 
     /// <summary>
     /// Стек на массиве. 
     /// </summary>
-    public class StackOnArray : Stack
+    public class StackOnArray : IStack
     {
         private int size = 32;
         private int head;
-        public int[] mas;
+        public double[] mas;
 
         public StackOnArray()
         {
             this.head = 0;
-            this.mas = new int[size]; 
+            this.mas = new double[size]; 
         }
 
         /// <summary>
         /// Добавить значение в стек.
         /// </summary>
         /// <param name="value">Добавляемое значение.</param>
-        public void Push(int value)
+        public void Push(double value)
         {
             if (head == size)
             {
@@ -37,15 +36,15 @@
         /// <summary>
         /// Взять значение из стека.
         /// </summary>
-        /// <returns>Возвращеаемое значение.</returns>
-        public int Pop()
+        /// <returns>Изъятое значение.</returns>
+        public double Pop()
         {
             if (head == 0)
             {
-                return -1;
+                throw new Exception("Попытка изъять элемент из пустого стека");
             }
 
-            int value = mas[head - 1];
+            double value = mas[head - 1];
             head--;
             return value;
 
@@ -55,11 +54,11 @@
         /// Прочитать головной элемент стека.
         /// </summary>
         /// <returns>Головное значение стека.</returns>
-        public int Peek()
+        public double Peek()
         {
             if (head == 0)
             {
-                return -1;
+                throw new Exception("Попытка прочитать голвной элемент пустого стека");
             }
 
             return mas[head - 1];

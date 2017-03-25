@@ -1,19 +1,18 @@
-﻿namespace StackOnListNamespace
+﻿namespace StackCalculator
 {
     using System;
-    using StackNamespace;
 
     /// <summary>
     /// Стек на списке. 
     /// </summary>
-    public class StackOnList : Stack
+    public class StackOnList : IStack
     {
         private class StackElement
         {
-            public int Value;
+            public double Value;
             public StackElement Next;
 
-            public StackElement(int value, StackElement next)
+            public StackElement(double value, StackElement next)
             {
                 this.Next = next;
                 this.Value = value;
@@ -31,7 +30,7 @@
         /// Добавить значение в стек.
         /// </summary>
         /// <param name="value">Добавляемое значение.</param>
-        public void Push(int value)
+        public void Push(double value)
         {
             StackElement newElement = new StackElement(value, head);
             head = newElement;
@@ -40,15 +39,15 @@
         /// <summary>
         /// Взять значение из стека.
         /// </summary>
-        /// <returns>Возвращеаемое значение.</returns>
-        public int Pop()
+        /// <returns>Изъятое значение.</returns>
+        public double Pop()
         {
             if (IsEmpty())
             {
-                return -1;
+                throw new Exception("Попытка изъять элемент из пустого стека");
             }
 
-            int popElement = head.Value;
+            double popElement = head.Value;
             head = head.Next;
             return popElement;
         }
@@ -57,11 +56,11 @@
         /// Прочитать головной элемент стека.
         /// </summary>
         /// <returns>Головное значение стека.</returns>
-        public int Peek()
+        public double Peek()
         {
             if (IsEmpty())
             {
-                return -1;
+                throw new Exception("Попытка прочитать голвной элемент пустого стека");
             }
 
             return head.Value;
