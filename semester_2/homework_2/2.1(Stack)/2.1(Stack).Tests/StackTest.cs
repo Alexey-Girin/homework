@@ -46,7 +46,13 @@
         [TestMethod]
         public void PopFromEmptyStackTest()
         {
-            stack.Pop();
+            try
+            {
+                stack.Pop();
+            }
+            catch(Exception)
+            {
+            }
         }
 
         private Stack stack;

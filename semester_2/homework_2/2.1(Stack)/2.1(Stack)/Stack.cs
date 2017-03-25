@@ -3,7 +3,7 @@
     using System;
 
     /// <summary>
-    /// Stack based on references.
+    /// Стек на списках.
     /// </summary>
     public class Stack
     {
@@ -27,9 +27,9 @@
         }
 
         /// <summary>
-        /// Push value to stack
+        /// Добавление значение в стек.
         /// </summary>
-        /// <param name="value">Value to be pushed</param>
+        /// <param name="value">Добавляемое значение.</param>
         public void Push(int value)
         {
             StackElement newElement = new StackElement(value, head);
@@ -37,14 +37,14 @@
         }
 
         /// <summary>
-        /// Pop value from stack
+        /// Иъятие головного элемента стека.
         /// </summary>
-        /// <returns>Popped value</returns>
+        /// <returns>Головной элемент.</returns>
         public int Pop()
         {
             if (IsEmpty())
             {
-                return -1;
+                throw new Exception("стек пуст");
             }
 
             int popElement = head.Value;
@@ -53,23 +53,23 @@
         }
 
         /// <summary>
-        /// Peek value from stack
+        /// Чтение головного элемента стека. 
         /// </summary>
-        /// <returns>Peeked value</returns>
+        /// <returns>Головной элемент.</returns>
         public int Peek()
         {
             if (IsEmpty())
             {
-                return -1;
+                throw new Exception("стек пуст");
             }
 
             return head.Value;
         }
 
         /// <summary>
-        /// Check stack for emptiness
+        /// Проверка стека на пустоту.
         /// </summary>
-        /// <returns>True is empty</returns>
+        /// <returns>True если пуст.</returns>
         public bool IsEmpty()
         {
             return head == null;
