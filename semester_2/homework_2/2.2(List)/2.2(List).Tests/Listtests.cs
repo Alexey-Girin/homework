@@ -72,7 +72,5 @@
         }
 
         private List list;
-
-
     }
 }

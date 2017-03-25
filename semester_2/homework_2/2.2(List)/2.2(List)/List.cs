@@ -3,7 +3,7 @@
     using System;
 
     /// <summary>
-    /// List based on references. 
+    /// Список. 
     /// </summary>
     public class List
     {
@@ -27,9 +27,9 @@
         }
 
         /// <summary>
-        /// Add value to list.
+        /// Добавление значения в список.
         /// </summary>
-        /// <param name="value">Value to be added</param>
+        /// <param name="value">Добавляемое значение.</param>
         public void Add(int value)
         {
             ListElement newElement = new ListElement(value, head);
@@ -37,9 +37,9 @@
         }
 
         /// <summary>
-        /// Check list for emptiness.
+        /// Проверка списка на пустоту.
         /// </summary>
-        /// <returns>If list is empty then true.</returns>
+        /// <returns>True если пусть.</returns>
         public bool IsEmpty()
         {
             if(head == null)
@@ -51,9 +51,9 @@
         }
 
         /// <summary>
-        /// Delete value from list.
+        /// Удаление знаечния из списка.
         /// </summary>
-        /// <param name="value">Value to be deleted.</param>
+        /// <param name="value">Значение удаляемого элемента.</param>
         public void Delete(int value)
         {
             if (head == null)
@@ -83,10 +83,10 @@
         }
 
         /// <summary>
-        /// Сheck for the presence of value in list.
+        /// Проверка на принадлежность значения списку.
         /// </summary>
-        /// <param name="value">Value belongs to list.</param>
-        /// <returns></returns>
+        /// <param name="value">Проверяемое значение.</param>
+        /// <returns>True если принадлежит</returns>
         public bool Find(int value)
         {
             ListElement position = head;
