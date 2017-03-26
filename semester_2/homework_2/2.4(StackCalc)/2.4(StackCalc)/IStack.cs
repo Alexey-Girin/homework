@@ -28,5 +28,11 @@
         /// </summary>
         /// <returns>True если пуст.</returns>
         bool IsEmpty();
+
+        /// <summary>
+        /// Размер стека.
+        /// </summary>
+        /// <returns>Число элементов стека.</returns>
+        int Size();
     }
 }

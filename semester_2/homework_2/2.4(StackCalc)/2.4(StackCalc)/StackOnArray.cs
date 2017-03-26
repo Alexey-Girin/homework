@@ -72,5 +72,14 @@
         {
             return head == 0;
         }
+
+        /// <summary>
+        /// Размер стека.
+        /// </summary>
+        /// <returns>Число элементов стека.</returns>
+        public int Size()
+        {
+            return head;
+        }
     }
 }

@@ -74,5 +74,23 @@
         {
             return head == null;
         }
+
+        /// <summary>
+        /// Размер стека.
+        /// </summary>
+        /// <returns>Число элементов стека.</returns>
+        public int Size()
+        {
+            int stackSize = 0;
+
+            StackElement position = head;
+            while (position != null)
+            {
+                position = position.Next;
+                stackSize++;
+            }
+
+            return stackSize;
+        }
     }
 }
