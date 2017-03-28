@@ -21,10 +21,7 @@
 
         private StackElement head;
 
-        public Stack()
-        {
-            this.head = null;
-        }
+        public Stack() => this.head = null;
 
         /// <summary>
         /// Добавление значение в стек.
@@ -70,9 +67,6 @@
         /// Проверка стека на пустоту.
         /// </summary>
         /// <returns>True если пуст.</returns>
-        public bool IsEmpty()
-        {
-            return head == null;
-        }
+        public bool IsEmpty() => head == null;
     }
 }
