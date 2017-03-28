@@ -3,7 +3,7 @@
     using ListNamespace;
 
     /// <summary>
-    /// Класс хеш-таблица.
+    /// Хеш-таблица.
     /// </summary>
     public class HashTable
     {
@@ -24,29 +24,20 @@
         /// Добавление значения в хеш-таблицу.
         /// </summary>
         /// <param name="value">Добавляемое значение.</param>
-        public void Add(string value)
-        {
-            mas[Hashing(value)].Add(value);
-        }
+        public void Add(string value) => mas[Hashing(value)].Add(value);
 
         /// <summary>
         /// Удаление значения из хеш-таблицы. 
         /// </summary>
         /// <param name="value">Удаляемое значение.</param>
-        public void Delete(string value)
-        {
-            mas[Hashing(value)].Delete(value);
-        }
+        public void Delete(string value) => mas[Hashing(value)].Delete(value);
 
         /// <summary>
         /// Проверка на принадлежность значения хеш-таблице.
         /// </summary>
         /// <param name="value">Проверяемое значение.</param>
         /// <returns>True если принадлежит.</returns>
-        public bool IsBelong(string value)
-        {
-            return mas[Hashing(value)].IsBelong(value);
-        }
+        public bool IsBelong(string value) => mas[Hashing(value)].IsBelong(value);
 
         /// <summary>
         /// Хеш-функция. 

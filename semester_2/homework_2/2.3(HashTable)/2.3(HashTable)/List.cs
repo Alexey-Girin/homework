@@ -3,10 +3,13 @@
     using System;
 
     /// <summary>
-    /// Реализация списка. 
+    /// Список. 
     /// </summary>
     public class List
     {
+        /// <summary>
+        /// Элемент списка.
+        /// </summary>
         private class ListElement
         {
             public string Value;
@@ -21,10 +24,7 @@
 
         private ListElement head;
 
-        public List()
-        {
-            this.head = null;
-        }
+        public List() => this.head = null;
 
         /// <summary>
         /// Добавление значения в список.
@@ -40,15 +40,7 @@
         /// Проверка списка на пустоту.
         /// </summary>
         /// <returns>True если пуст</returns>
-        public bool IsEmpty()
-        {
-            if (head == null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        public bool IsEmpty() => head == null;
 
         /// <summary>
         /// Удаление значение из списка.
@@ -58,7 +50,7 @@
         {
             if (head == null)
             {
-                return;
+                throw new Exception("элемент не найден");
             }
 
             if (head.Value == value)
@@ -79,7 +71,7 @@
                 position = position.Next;
             }
 
-            Console.WriteLine("Value not found");
+            throw new Exception("элемент не найден");
         }
 
         /// <summary>

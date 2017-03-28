@@ -5,7 +5,7 @@
     using HashTableNamespace;
 
     [TestClass]
-    public class ListTests
+    public class HashTableTest
     {
         [TestInitialize]
         public void Initialize()
@@ -14,32 +14,35 @@
         }
 
         [TestMethod]
-        public void AddTest()
+        public void AddOne()
         {
             hashTable.Add("halfwaytonowhere");
-            Assert.AreEqual(hashTable.IsBelong("halfwaytonowhere"), true);
+            Assert.IsTrue(hashTable.IsBelong("halfwaytonowhere"));
         }
 
         [TestMethod]
-        public void AddTest2()
-        {
-            hashTable.Add("halfwaytonowhere");
-            hashTable.Add("antananarivo");
-            hashTable.Add("rgrrgeberwgowjeg");
-            Assert.AreEqual(hashTable.IsBelong("antananarivo"), true);
-        }
-
-        [TestMethod]
-        public void AddTest3()
+        public void AddSome1()
         {
             hashTable.Add("halfwaytonowhere");
             hashTable.Add("antananarivo");
             hashTable.Add("rgrrgeberwgowjeg");
-            Assert.AreEqual(hashTable.IsBelong("fegwgweg"), false);
+            Assert.IsTrue(hashTable.IsBelong("antananarivo"));
         }
 
         [TestMethod]
-        public void DeleteTest1()
+        public void AddSome2()
+        {
+            hashTable.Add("halfwaytonowhere");
+            hashTable.Add("antananarivo");
+            hashTable.Add("rgrrgeberwgowjeg");
+            hashTable.Add("halfwaytonowhere");
+            hashTable.Add("antananarivo");
+            hashTable.Add("rgrrgeberwgowjeg");
+            Assert.IsTrue(hashTable.IsBelong("halfwaytonowhere"));
+        }
+
+        [TestMethod]
+        public void AddSomeAndDelete()
         {
             hashTable.Add("halfwaytonowhere");
             hashTable.Add("antananarivo");
@@ -49,9 +52,16 @@
         }
 
         [TestMethod]
-        public void DeleteTest2()
+        public void DeleteEmpty()
         {
-            hashTable.Delete("halfwaytonowhere");
+            try
+            {
+                hashTable.Delete("halfwaytonowhere");
+            }
+            catch(Exception e)
+            {
+                Assert.AreEqual(e.Message, "элемент не найден");
+            }
         }
 
         private HashTable hashTable;
