@@ -5,7 +5,7 @@
     using ListNamespace;
 
     [TestClass]
-    public class ListTests
+    public class ListTest
     {
         [TestInitialize]
         public void Initialize()
@@ -21,29 +21,29 @@
         }
 
         [TestMethod]
-        public void DeleteTest1()
+        public void DeleteExistingElement()
         {
             list.Add(1);
             list.Delete(1);
-            Assert.AreEqual(list.IsEmpty(), true);
+            Assert.IsTrue(list.IsEmpty());
         }
 
         [TestMethod]
-        public void DeleteTest2()
+        public void DeleteNonexistentElement()
         {
             list.Add(1);
             list.Delete(2);
-            Assert.AreEqual(list.IsEmpty(), false);
+            Assert.IsFalse(list.IsEmpty());
         }
 
         [TestMethod]
-        public void DeleteTest3()
+        public void DeleteSome()
         {
             list.Add(1);
             list.Add(2);
             list.Delete(1);
             list.Delete(2);
-            Assert.AreEqual(list.IsEmpty(), true);
+            Assert.IsTrue(list.IsEmpty());
         }
 
         [TestMethod]
@@ -53,22 +53,22 @@
         }
 
         [TestMethod]
-        public void FindTest1()
+        public void FindExistentElement()
         {
             list.Add(1);
             list.Add(2);
             list.Add(3);
             list.Add(4);
-            Assert.AreEqual(list.Find(2), true);
+            Assert.IsTrue(list.IsBelong(2));
         }
 
         [TestMethod]
-        public void FindTest2()
+        public void FindNonexistentElement()
         {
             list.Add(1);
             list.Add(3);
             list.Add(4);
-            Assert.AreEqual(list.Find(2), false);
+            Assert.IsFalse(list.IsBelong(2));
         }
 
         private List list;

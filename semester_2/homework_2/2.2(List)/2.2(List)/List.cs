@@ -21,10 +21,7 @@
 
         private ListElement head;
 
-        public List()
-        {
-            this.head = null;
-        }
+        public List() => this.head = null;
 
         /// <summary>
         /// Добавление значения в список.
@@ -40,15 +37,7 @@
         /// Проверка списка на пустоту.
         /// </summary>
         /// <returns>True если пусть.</returns>
-        public bool IsEmpty()
-        {
-            if(head == null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        public bool IsEmpty() => head == null;
 
         /// <summary>
         /// Удаление знаечния из списка.
@@ -87,7 +76,7 @@
         /// </summary>
         /// <param name="value">Проверяемое значение.</param>
         /// <returns>True если принадлежит</returns>
-        public bool Find(int value)
+        public bool IsBelong(int value)
         {
             ListElement position = head;
             while (position != null)
