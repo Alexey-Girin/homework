@@ -5,15 +5,11 @@
     class Operand : NodeValue
     {
         public int value;
-        
-        public Operand(int addedValue)
-        {
-            this.value = addedValue; 
-        }
 
-        public void PrintValue()
-        {
-            Console.Write(value);
-        }
+        public Operand(int addedValue) => this.value = addedValue;
+
+        public void PrintValue() => Console.Write(value);
+
+        public int GetValue() => value;
     }
 }

@@ -24,59 +24,91 @@
                 this.nodeValue = new Operator(value);
             }
 
-            public void Print()
+            public double Calculate()
             {
+                if (nodeValue is Operand)
+                {
+                    return 1.0 * nodeValue.GetValue();
+                }
 
+                double firstNum = leftSon.Calculate();
+                double secondNum = rightSon.Calculate();
+                return BinaryOperation((char)nodeValue.GetValue(), firstNum, secondNum);
             }
 
-            
+            private double BinaryOperation(char sign, double firstNum, double secondNum)
+            {
+                switch (sign)
+                {
+                    case ('+'):
+                        return firstNum + secondNum;
+                    case ('-'):
+                        return firstNum - secondNum;
+                    case ('*'):
+                        return firstNum * secondNum;
+                    case ('/'):
+                        return firstNum / secondNum;
+                    default:
+                        throw new Exception();
+                }
+            }
         }
 
         private Node root;
 
-        public ParseTree()
+        public ParseTree() => this.root = null;
+
+        public double Calculate(string expression)
         {
-            this.root = null;
+            root = BuildTree(expression);
+
+            Console.Write((char)root.nodeValue.GetValue());
+
+            return root.Calculate();
         }
 
-        public int Calculate(string expression)
+        private Node BuildTree(string expression)
         {
-            BuildTree(expression, root);
-            root.nodeValue.PrintValue();
-            return 1;
-            
-        }
+            Node localRoot = new Node(expression[1], null, null);
 
-        private void BuildTree(string expression, Node localRoot)
-        {
-            localRoot = new Node(expression[2], null, null);
-
-            int nextPosition;
             int closeBracket;
+            int openBracket = 3;
 
-            if (expression[4] == '(')
+            if (expression[openBracket] == '(')
             {
-                closeBracket = FindCloseBracket(expression, 1);
-                BuildTree(expression.Substring(4, closeBracket - 4 + 1), localRoot.leftSon);
-                nextPosition = closeBracket + 2;
+                closeBracket = FindCloseBracket(expression, openBracket + 1);
+                localRoot.leftSon = BuildTree(expression.Substring(openBracket, closeBracket - openBracket + 1));
+                openBracket = closeBracket + 2;
             }
             else
             {
-                localRoot.leftSon = new Node(expression[4], null, null);
-                localRoot.rightSon = new Node(expression[6], null, null);
-                return;
+                int firstOperand = openBracket;
+                localRoot.leftSon = new Node(expression[firstOperand], null, null);
+
+                int secondOpenBracket = 5;
+                openBracket = secondOpenBracket;
             }
 
-            closeBracket = FindCloseBracket(expression, 2);
-            BuildTree(expression.Substring(nextPosition, closeBracket - nextPosition + 1), localRoot.rightSon);
+            if (expression[openBracket] == '(')
+            {
+                closeBracket = FindCloseBracket(expression, openBracket + 1);
+                localRoot.rightSon = BuildTree(expression.Substring(openBracket, closeBracket - openBracket + 1));
+            }
+            else
+            {
+                int secondOperand = openBracket;
+                localRoot.rightSon = new Node(expression[secondOperand], null, null);
+            }
 
+            return localRoot;
         }
 
-        private int FindCloseBracket(string expression, int numOfExpression)
+        private int FindCloseBracket(string expression, int startPosition)
         {
             int balance = 1;
             int expressionSize = expression.Length;
-            for (int i = 12; i < expressionSize; i++)
+
+            for (int i = startPosition; i < expressionSize; i++)
             {
                 if (expression[i] == '(')
                 {
@@ -90,15 +122,7 @@
 
                     if(balance == 0)
                     {
-                        if (numOfExpression == 1)
-                        {
-                            return i;
-                        }
-                        else
-                        {
-                            balance = 1;
-                            i += 3;
-                        }
+                        return i;
                     }
                 }
             }

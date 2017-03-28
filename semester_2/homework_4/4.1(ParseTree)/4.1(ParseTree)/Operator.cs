@@ -6,14 +6,10 @@
     {
         public char value;
 
-        public Operator(char addedValue)
-        {
-            this.value = addedValue;
-        }
+        public Operator(char addedValue) => this.value = addedValue;
 
-        public void PrintValue()
-        {
-            Console.Write(value);
-        }
+        public void PrintValue() => Console.Write(value);
+
+        public int GetValue() => value;
     }
 }
