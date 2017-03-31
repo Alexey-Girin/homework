@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9C08ECEA-F0CE-497F-9A7B-38A6E12CD999}</ProjectGuid>
+    <ProjectGuid>{B42464B2-E9C4-44B2-AFD6-5C907A587479}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>_4._1_ParseTree_</RootNamespace>
     <AssemblyName>4.1%28ParseTree%29</AssemblyName>
@@ -42,9 +42,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NodeValue.cs" />
-    <Compile Include="Operand.cs" />
-    <Compile Include="Operator.cs" />
     <Compile Include="ParseTree.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

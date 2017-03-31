@@ -2,40 +2,75 @@
 {
     using System;
 
-    class ParseTree
+    /// <summary>
+    /// Дерево разбора арифметического выражения.
+    /// </summary>
+    public class ParseTree
     {
-        class Node
+        /// <summary>
+        /// Узел дерева.
+        /// </summary>
+        private abstract class Node
         {
-            public NodeValue nodeValue;
             public Node leftSon;
             public Node rightSon;
 
-            public Node(char value, Node newLeftSon, Node newRightChild)
+            public Node()
             {
-                this.leftSon = newLeftSon;
-                this.rightSon = newRightChild;
-
-                if (value > '0' && value < '9')
-                {
-                    this.nodeValue = new Operand(value - '0');
-                    return;
-                }
-
-                this.nodeValue = new Operator(value);
+                leftSon = null;
+                rightSon = null;
             }
 
-            public double Calculate()
-            {
-                if (nodeValue is Operand)
-                {
-                    return 1.0 * nodeValue.GetValue();
-                }
+            /// <summary>
+            /// Вычисление значения в данном узле дерева.
+            /// </summary>
+            /// <returns>Результат вычисления.</returns>
+            public abstract double CalculateNode();
+        }
 
-                double firstNum = leftSon.Calculate();
-                double secondNum = rightSon.Calculate();
-                return BinaryOperation((char)nodeValue.GetValue(), firstNum, secondNum);
+        /// <summary>
+        /// Узел - операнд.
+        /// </summary>
+        private class Operand : Node
+        {
+            public double operand;
+
+            public Operand(int value) => operand = 1.0 * value;
+
+            /// <summary>
+            /// Возврат значения операнда.
+            /// </summary>
+            /// <returns>Значение операнда.</returns>
+            public override double CalculateNode() => operand;
+        }
+
+        /// <summary>
+        /// Узел дерева - оператор.
+        /// </summary>
+        private class Operator : Node
+        {
+            public char @operator;
+
+            public Operator(char value) => @operator = value;
+
+            /// <summary>
+            /// Вычисление значения узла.
+            /// </summary>
+            /// <returns>Результат операции.</returns>
+            public override double CalculateNode()
+            {
+                double firstNum = leftSon.CalculateNode();
+                double secondNum = rightSon.CalculateNode();
+                return BinaryOperation(@operator, firstNum, secondNum);
             }
 
+            /// <summary>
+            /// Выполнение операции над сыновьями узла.
+            /// </summary>
+            /// <param name="sign">Арифметический знак операции.</param>
+            /// <param name="firstNum">Значение операнда из левого сына узла.</param>
+            /// <param name="secondNum">Значение операнда из правого сына узла.</param>
+            /// <returns>Результат операции.</returns>
             private double BinaryOperation(char sign, double firstNum, double secondNum)
             {
                 switch (sign)
@@ -58,57 +93,80 @@
 
         public ParseTree() => this.root = null;
 
+        /// <summary>
+        /// Вычисление значения выражения через дерево разбора.
+        /// </summary>
+        /// <param name="expression">Вычисляемое выражение.</param>
+        /// <returns>Значение выражения.</returns>
         public double Calculate(string expression)
         {
             root = BuildTree(expression);
 
-            Console.Write((char)root.nodeValue.GetValue());
-
-            return root.Calculate();
+            return root.CalculateNode();
         }
 
+        /// <summary>
+        /// Построение дерева разбора.
+        /// </summary>
+        /// <param name="expression">Выражение, по которому строится дерево разбора.</param>
+        /// <returns>Корень построенного дерева разбора.</returns>
         private Node BuildTree(string expression)
         {
-            Node localRoot = new Node(expression[1], null, null);
+            Node localRoot = new Operator(expression[1]);
 
             int closeBracket;
             int openBracket = 3;
 
             if (expression[openBracket] == '(')
             {
-                closeBracket = FindCloseBracket(expression, openBracket + 1);
-                localRoot.leftSon = BuildTree(expression.Substring(openBracket, closeBracket - openBracket + 1));
+                closeBracket = FindCloseBracket(expression, openBracket);
+                localRoot.leftSon = BuildTree(
+                    expression.Substring(openBracket, closeBracket - openBracket + 1));
                 openBracket = closeBracket + 2;
             }
             else
             {
-                int firstOperand = openBracket;
-                localRoot.leftSon = new Node(expression[firstOperand], null, null);
+                int expressionSize = expression.Length;
+                string operand = expression.Substring(
+                    openBracket, expressionSize - openBracket);
 
-                int secondOpenBracket = 5;
-                openBracket = secondOpenBracket;
+                int endPosition = operand.IndexOf(" ");
+                operand = operand.Substring(0, endPosition);
+
+                openBracket += endPosition + 1;
+
+                localRoot.leftSon = new Operand(Convert.ToInt32(operand, 10));
             }
 
             if (expression[openBracket] == '(')
             {
-                closeBracket = FindCloseBracket(expression, openBracket + 1);
-                localRoot.rightSon = BuildTree(expression.Substring(openBracket, closeBracket - openBracket + 1));
+                closeBracket = FindCloseBracket(expression, openBracket);
+                localRoot.rightSon = BuildTree(
+                    expression.Substring(openBracket, closeBracket - openBracket + 1));
             }
             else
             {
-                int secondOperand = openBracket;
-                localRoot.rightSon = new Node(expression[secondOperand], null, null);
+                int expressionSize = expression.Length;
+                string operand = expression.Substring(openBracket, expressionSize - openBracket - 1);
+
+                localRoot.rightSon = new Operand(Convert.ToInt32(operand, 10));
             }
 
             return localRoot;
         }
 
+        /// <summary>
+        /// Вспомогательный метод для построения дерева - нахождение балансовой закрывающейся скобки для данной открывающейся.
+        /// </summary>
+        /// <param name="expression">Выражение, в котором ведется поиск.</param>
+        /// <param name="startPosition">Начальная позиця поиска.</param>
+        /// <returns>Позиция балансовой закрывающейся скобки в выражении.</returns>
         private int FindCloseBracket(string expression, int startPosition)
         {
             int balance = 1;
             int expressionSize = expression.Length;
 
-            for (int i = startPosition; i < expressionSize; i++)
+            for (int i = startPosition + 1; i < expressionSize; i++)
             {
                 if (expression[i] == '(')
                 {
@@ -120,13 +178,13 @@
                 {
                     balance--;
 
-                    if(balance == 0)
+                    if (balance == 0)
                     {
                         return i;
                     }
                 }
             }
-   
+
             throw new Exception();
         }
     }
