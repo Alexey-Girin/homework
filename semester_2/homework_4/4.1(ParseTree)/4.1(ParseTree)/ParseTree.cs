@@ -26,6 +26,11 @@
             /// </summary>
             /// <returns>Результат вычисления.</returns>
             public abstract double CalculateNode();
+
+            /// <summary>
+            /// Печать узла и его предков.
+            /// </summary>
+            public abstract void Print();
         }
 
         /// <summary>
@@ -33,7 +38,7 @@
         /// </summary>
         private class Operand : Node
         {
-            public double operand;
+            private double operand;
 
             public Operand(int value) => operand = 1.0 * value;
 
@@ -42,6 +47,11 @@
             /// </summary>
             /// <returns>Значение операнда.</returns>
             public override double CalculateNode() => operand;
+
+            /// <summary>
+            /// Печать значения операнда.
+            /// </summary>
+            public override void Print() => Console.Write(operand + " ");
         }
 
         /// <summary>
@@ -49,7 +59,7 @@
         /// </summary>
         private class Operator : Node
         {
-            public char @operator;
+            private char @operator;
 
             public Operator(char value) => @operator = value;
 
@@ -82,10 +92,27 @@
                     case ('*'):
                         return firstNum * secondNum;
                     case ('/'):
+                        if (secondNum == 0)
+                        {
+                            throw new Exception("деление на ноль");
+                        }
                         return firstNum / secondNum;
                     default:
                         throw new Exception();
                 }
+            }
+
+            /// <summary>
+            /// Печать знака операции и предков узла.
+            /// </summary>
+            public override void Print()
+            {
+                Console.Write("( " + @operator + " ");
+
+                leftSon.Print();
+                rightSon.Print();
+
+                Console.Write(") ");
             }
         }
 
@@ -94,13 +121,16 @@
         public ParseTree() => this.root = null;
 
         /// <summary>
-        /// Вычисление значения выражения через дерево разбора.
+        /// Вычисление значения выражения через дерево разбора (построение, печать, вычисление).
         /// </summary>
         /// <param name="expression">Вычисляемое выражение.</param>
         /// <returns>Значение выражения.</returns>
         public double Calculate(string expression)
         {
             root = BuildTree(expression);
+
+            root.Print();
+            Console.WriteLine();
 
             return root.CalculateNode();
         }
