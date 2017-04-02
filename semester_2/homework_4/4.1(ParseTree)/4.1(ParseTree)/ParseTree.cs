@@ -116,7 +116,7 @@
             }
         }
 
-        private Node root;
+        private Operator root;
 
         public ParseTree() => this.root = null;
 
@@ -140,9 +140,9 @@
         /// </summary>
         /// <param name="expression">Выражение, по которому строится дерево разбора.</param>
         /// <returns>Корень построенного дерева разбора.</returns>
-        private Node BuildTree(string expression)
+        private Operator BuildTree(string expression)
         {
-            Node localRoot = new Operator(expression[1]);
+            Operator localRoot = new Operator(expression[1]);
 
             int closeBracket;
             int openBracket = 3;
