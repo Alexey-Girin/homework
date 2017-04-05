@@ -13,16 +13,10 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(Exception))]
         public void EmptуExpressionTest()
         {
-            try
-            {
-                double result = parseTree.Calculate("(/ 1 0)");
-            }
-            catch(Exception e)
-            {
-                Assert.AreEqual(e.Message, "деление на ноль");
-            }
+            double result = parseTree.Calculate("(/ 1 0)");
         }
 
         [TestMethod]
