@@ -1,6 +1,5 @@
 ﻿namespace StackNamespace.Test
 {
-    using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using StackNamespace;
 
@@ -44,15 +43,10 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(EmptyStackExeption))]
         public void PopFromEmptyStackTest()
         {
-            try
-            {
-                stack.Pop();
-            }
-            catch(Exception)
-            {
-            }
+            stack.Pop();
         }
 
         private Stack stack;
