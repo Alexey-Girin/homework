@@ -62,7 +62,7 @@
         {
             if (IsEmpty())
             {
-                throw new EmptyStackExeption("попытка обращения к элементу путого списка");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
             int popElement = head.Value;
@@ -78,7 +78,7 @@
         {
             if (IsEmpty())
             {
-                throw new EmptyStackExeption("попытка обращения к элементу путого списка");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
             return head.Value;
