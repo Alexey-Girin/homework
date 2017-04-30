@@ -1,8 +1,7 @@
 ﻿namespace HashTableNamespace.Test
 {
-    using System;
+    using ListNamespace;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using HashTableNamespace;
 
     [TestClass]
     public class HashTableTest
@@ -52,16 +51,10 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(EmptyListExeption))]
         public void DeleteEmpty()
         {
-            try
-            {
-                hashTable.Delete("halfwaytonowhere");
-            }
-            catch(Exception e)
-            {
-                Assert.AreEqual(e.Message, "элемент не найден");
-            }
+           hashTable.Delete("halfwaytonowhere");
         }
 
         private HashTable hashTable;
