@@ -7,23 +7,23 @@
     /// </summary>
     public class HashTable
     {
-        private uint size = 32; 
+        private uint size = 32;
 
         /// <summary>
         /// Массив из <see cref="List"/>.
         /// </summary>
-        private List[] Mas { get; set; }
+        private List[] mas;
         
         /// <summary>
         /// Конструктор экземпляра класса <see cref="HashTable"/>.
         /// </summary>
         public HashTable()
         {
-            Mas = new List[size];
+            mas = new List[size];
 
             for (int i = 0; i < size; i++)
             {
-                Mas[i] = new List();
+                mas[i] = new List();
             }
         }
 
@@ -31,20 +31,20 @@
         /// Добавление значения в хеш-таблицу.
         /// </summary>
         /// <param name="value">Добавляемое значение.</param>
-        public void Add(string value) => Mas[Hashing(value)].Add(value, 0);
+        public void Add(string value) => mas[Hashing(value)].Add(value, 0);
 
         /// <summary>
         /// Удаление значения из хеш-таблицы. 
         /// </summary>
         /// <param name="value">Удаляемое значение.</param>
-        public void Delete(string value) => Mas[Hashing(value)].Delete(value);
+        public void Delete(string value) => mas[Hashing(value)].Delete(value);
 
         /// <summary>
         /// Проверка на принадлежность значения хеш-таблице.
         /// </summary>
         /// <param name="value">Проверяемое значение.</param>
         /// <returns>True если принадлежит.</returns>
-        public bool IsBelong(string value) => Mas[Hashing(value)].IsBelong(value);
+        public bool IsBelong(string value) => mas[Hashing(value)].IsBelong(value);
 
         /// <summary>
         /// Хеш-функция. 
