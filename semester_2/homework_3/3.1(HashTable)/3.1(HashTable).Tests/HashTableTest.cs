@@ -19,7 +19,7 @@
             hashTable.Add("TechN9ne");
             hashTable.Add("Jay-Z");
 
-            Assert.AreEqual(hashTable.IsBelong("TechN9ne"), true);
+            Assert.IsTrue(hashTable.IsBelong("TechN9ne"));
         }
 
         [TestMethod]
@@ -30,7 +30,7 @@
             hashTable.Add("Jay-Z");
             hashTable.Delete("TechN9ne");
 
-            Assert.AreEqual(hashTable.IsBelong("TechN9ne"), false);
+            Assert.IsFalse(hashTable.IsBelong("TechN9ne"));
         }
 
         [TestMethod]
