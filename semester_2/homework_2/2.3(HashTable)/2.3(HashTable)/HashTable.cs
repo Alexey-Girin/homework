@@ -12,7 +12,7 @@
         /// <summary>
         /// Массив из <see cref="List"/>.
         /// </summary>
-        public List[] Mas { get; set; }
+        private List[] Mas { get; set; }
         
         /// <summary>
         /// Конструктор экземпляра класса <see cref="HashTable"/>.

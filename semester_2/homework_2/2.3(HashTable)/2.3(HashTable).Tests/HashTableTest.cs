@@ -47,7 +47,7 @@
             hashTable.Add("antananarivo");
             hashTable.Add("rgrrgeberwgowjeg");
             hashTable.Delete("halfwaytonowhere");
-            Assert.AreEqual(hashTable.IsBelong("halfwaytonowhere"), false);
+            Assert.IsFalse(hashTable.IsBelong("halfwaytonowhere"));
         }
 
         [TestMethod]
