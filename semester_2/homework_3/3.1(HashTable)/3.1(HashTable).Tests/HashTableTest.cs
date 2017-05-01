@@ -1,6 +1,6 @@
 ﻿namespace HashTableNamespace.Tests
 {
-    using System;
+    using ListNamespace;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -34,16 +34,10 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(EmptyListExeption))]
         public void DeleteEmpty()
         {
-            try
-            {
-                hashTable.Delete("TechN9ne");
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "значение не найдено");
-            }
+            hashTable.Delete("TechN9ne");
         }
 
         private HashTable hashTable;

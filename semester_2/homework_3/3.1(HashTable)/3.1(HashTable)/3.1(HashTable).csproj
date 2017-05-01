@@ -42,6 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActionPositionExeption.cs" />
+    <Compile Include="EmptyListExeption.cs" />
+    <Compile Include="HashFunctionExeption.cs" />
     <Compile Include="HashFunction_1.cs" />
     <Compile Include="HashFunction_2.cs" />
     <Compile Include="HashTable.cs" />
