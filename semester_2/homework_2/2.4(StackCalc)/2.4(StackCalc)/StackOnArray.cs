@@ -9,77 +9,72 @@
     {
         private int size = 32;
         private int head;
-        public double[] mas;
-
-        public StackOnArray()
-        {
-            this.head = 0;
-            this.mas = new double[size]; 
-        }
 
         /// <summary>
-        /// Добавить значение в стек.
+        /// Массив для <see cref="StackOnArray"/>.
         /// </summary>
-        /// <param name="value">Добавляемое значение.</param>
+        public double[] Mas { get; set; }
+
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="StackOnArray"/>.s
+        /// </summary>
+        public StackOnArray() => this.Mas = new double[size]; 
+
+        /// <summary>
+        /// Добавление элемента в стек.
+        /// </summary>
+        /// <param name="value">Значение добавляемого элемента.</param>
         public void Push(double value)
         {
             if (head == size)
             {
-                Console.WriteLine("стек переполнен");
-                return;
+                throw new OverflowException("попытка добавления элемента в переполненный стек");
             }
 
-            mas[head] = value;
+            Mas[head] = value;
             head++;
         }
 
         /// <summary>
-        /// Взять значение из стека.
+        /// Изъятие головного элемента стека.
         /// </summary>
-        /// <returns>Изъятое значение.</returns>
+        /// <returns>Значение головного элемента стека.</returns>
         public double Pop()
         {
             if (head == 0)
             {
-                throw new Exception("Попытка изъять элемент из пустого стека");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
-            double value = mas[head - 1];
+            double value = Mas[head - 1];
             head--;
             return value;
-
         }
 
         /// <summary>
-        /// Прочитать головной элемент стека.
+        /// Получение значения головного элемента стека.
         /// </summary>
-        /// <returns>Головное значение стека.</returns>
+        /// <returns>Значение головного элемента стека.</returns>
         public double Peek()
         {
             if (head == 0)
             {
-                throw new Exception("Попытка прочитать голвной элемент пустого стека");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
-            return mas[head - 1];
+            return Mas[head - 1];
         }
 
         /// <summary>
-        /// Проверить стек на пустоту.
+        /// Проверка стека на пустоту.
         /// </summary>
         /// <returns>True если пуст.</returns>
-        public bool IsEmpty()
-        {
-            return head == 0;
-        }
+        public bool IsEmpty() => head == 0;
 
         /// <summary>
         /// Размер стека.
         /// </summary>
         /// <returns>Число элементов стека.</returns>
-        public int Size()
-        {
-            return head;
-        }
+        public int Size() => head;
     }
 }

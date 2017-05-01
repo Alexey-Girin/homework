@@ -1,17 +1,23 @@
 ﻿namespace StackCalculator
 {
-    using System;
-
     /// <summary>
     /// Стек на списке. 
     /// </summary>
     public class StackOnList : IStack
     {
+        /// <summary>
+        /// Элемент <see cref="StackOnList"/>.
+        /// </summary>
         private class StackElement
         {
-            public double Value;
-            public StackElement Next;
+            public double Value { get; set; }
+            public StackElement Next { get; set; }
 
+            /// <summary>
+            /// Конструктор экземпляра класса <see cref="StackElement"/>.
+            /// </summary>
+            /// <param name="value">Значение элемента.</param>
+            /// <param name="next">Следующий за данным элемент.</param>
             public StackElement(double value, StackElement next)
             {
                 this.Next = next;
@@ -21,15 +27,17 @@
 
         private StackElement head;
 
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="StackOnList"/>.
+        /// </summary>
         public StackOnList()
         {
-            this.head = null;
         }
 
         /// <summary>
-        /// Добавить значение в стек.
+        /// Добавление элемента в стек.
         /// </summary>
-        /// <param name="value">Добавляемое значение.</param>
+        /// <param name="value">Значение добавляемого элемента.</param>
         public void Push(double value)
         {
             StackElement newElement = new StackElement(value, head);
@@ -37,14 +45,14 @@
         }
 
         /// <summary>
-        /// Взять значение из стека.
+        /// Изъятие головного элемента стека.
         /// </summary>
-        /// <returns>Изъятое значение.</returns>
+        /// <returns>Значение головного элемента стека.</returns>
         public double Pop()
         {
             if (IsEmpty())
             {
-                throw new Exception("Попытка изъять элемент из пустого стека");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
             double popElement = head.Value;
@@ -53,14 +61,14 @@
         }
 
         /// <summary>
-        /// Прочитать головной элемент стека.
+        /// Получение значения головного элемента стека.
         /// </summary>
-        /// <returns>Головное значение стека.</returns>
+        /// <returns>Значение головного элемента стека.</returns>
         public double Peek()
         {
             if (IsEmpty())
             {
-                throw new Exception("Попытка прочитать голвной элемент пустого стека");
+                throw new EmptyStackExeption("попытка обращения к элементу путого стека");
             }
 
             return head.Value;
@@ -70,10 +78,7 @@
         /// Проверить стек на пустоту.
         /// </summary>
         /// <returns>True если пуст.</returns>
-        public bool IsEmpty()
-        {
-            return head == null;
-        }
+        public bool IsEmpty() => head == null;
 
         /// <summary>
         /// Размер стека.

@@ -13,65 +13,53 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(InputErrorExeption))]
         public void EmptуExpression()
         {
-            try
-            {
-                stackCalc.Calculation("");
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "ошибка ввода");
-            }
+            stackCalc.Calculation("");
         }
 
         [TestMethod]
         public void Sum()
         {
-            Assert.AreEqual(stackCalc.Calculation("21 30 +"), 51);
+            Assert.AreEqual(51, stackCalc.Calculation("21 30 +"));
         }
 
         [TestMethod]
         public void Subtraction()
         {
-            Assert.AreEqual(stackCalc.Calculation("23 25 -"), -2);
+            Assert.AreEqual(-2, stackCalc.Calculation("23 25 -"));
         }
 
         [TestMethod]
         public void Multiplication()
         {
-            Assert.AreEqual(stackCalc.Calculation("7 3 *"), 21);
+            Assert.AreEqual(21, stackCalc.Calculation("7 3 *"));
         }
 
         [TestMethod]
         public void Division()
         {
-            Assert.AreEqual(stackCalc.Calculation("7 35 /"), 0.2);
+            Assert.AreEqual(0.2, stackCalc.Calculation("7 35 /"));
         }
 
         [TestMethod]
+        [ExpectedException(typeof(InputErrorExeption))]
         public void DivisionByZero()
         {
-            try
-            {
-                stackCalc.Calculation("7 0 /");
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "ошибка ввода");
-            }
+            stackCalc.Calculation("7 0 /");
         }
 
         [TestMethod]
         public void CompoundExpression1()
         {
-            Assert.AreEqual(stackCalc.Calculation("21 5 + 4 8 - /"), -6.5);
+            Assert.AreEqual(-6.5, stackCalc.Calculation("21 5 + 4 8 - /"));
         }
 
         [TestMethod]
         public void CompoundExpression2()
         {
-            Assert.AreEqual(stackCalc.Calculation("1 2 + 4 - 12 2 / *"), -6);
+            Assert.AreEqual(-6, stackCalc.Calculation("1 2 + 4 - 12 2 / *"));
         }
 
         private StackCalc stackCalc;

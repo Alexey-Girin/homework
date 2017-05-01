@@ -7,11 +7,15 @@
     /// </summary>
     public class StackCalc
     {
-        private IStack Stack;
-        
+        private IStack stack;
+
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="StackCalc"/>.
+        /// </summary>
+        /// <param name="stack">Стек.</param>
         public StackCalc(IStack stack)
         {
-            this.Stack = stack;
+            this.stack = stack;
         }
 
         /// <summary>
@@ -33,7 +37,7 @@
 
                 if (number != 0)
                 {
-                    Stack.Push(number);
+                    stack.Push(number);
                     number = 0;
                     continue;
                 }
@@ -46,12 +50,12 @@
                 PerformOperation(expression[i]);
             }
 
-            if (Stack.Size() != 1)
+            if (stack.Size() != 1)
             {
-                throw new Exception("ошибка ввода");
+                throw new InputErrorExeption("ошибка ввода");
             }
            
-            return Stack.Pop();
+            return stack.Pop();
         }
 
         /// <summary>
@@ -60,38 +64,35 @@
         /// <param name="operator">Возможный оператор.</param>
         private void PerformOperation(char @operator)
         {
-            double firstOperand;
-            double secondOperand;
-
-            if (Stack.Size() < 2)
+            if (stack.Size() < 2)
             {
-                throw new Exception("ошибка ввода");
+                throw new InputErrorExeption("ошибка ввода");
             }
 
             switch (@operator)
             {
                 case '+':
-                    secondOperand = Stack.Pop();
-                    firstOperand = Stack.Pop();
-                    Stack.Push(firstOperand + secondOperand);
+                    var secondOperand = stack.Pop();
+                    var firstOperand = stack.Pop();
+                    stack.Push(firstOperand + secondOperand);
                     return;
                 case '-':
-                    secondOperand = Stack.Pop();
-                    firstOperand = Stack.Pop();
-                    Stack.Push(firstOperand - secondOperand);
+                    secondOperand = stack.Pop();
+                    firstOperand = stack.Pop();
+                    stack.Push(firstOperand - secondOperand);
                     return;
                 case '*':
-                    secondOperand = Stack.Pop();
-                    firstOperand = Stack.Pop();
-                    Stack.Push(firstOperand * secondOperand);
+                    secondOperand = stack.Pop();
+                    firstOperand = stack.Pop();
+                    stack.Push(firstOperand * secondOperand);
                     return;
                 case '/':
-                    secondOperand = Stack.Pop();
-                    firstOperand = Stack.Pop();
-                    Stack.Push(firstOperand / secondOperand);
+                    secondOperand = stack.Pop();
+                    firstOperand = stack.Pop();
+                    stack.Push(firstOperand / secondOperand);
                     return;
                 default:
-                    throw new Exception("ошибка ввода");
+                    throw new InputErrorExeption("ошибка ввода");
             }
         }        
     }

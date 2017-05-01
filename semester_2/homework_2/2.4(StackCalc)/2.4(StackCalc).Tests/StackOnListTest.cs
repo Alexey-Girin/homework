@@ -43,15 +43,10 @@
         }
 
         [TestMethod]
+        [ExpectedException(typeof(EmptyStackExeption))]
         public void PopFromEmptyStackTest()
         {
-            try
-            {
-                stack.Pop();
-            }
-            catch (Exception)
-            {
-            }
+            stack.Pop();
         }
 
         private IStack stack;
