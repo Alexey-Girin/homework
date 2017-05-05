@@ -42,8 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActionPositionExeption.cs" />
     <Compile Include="AddListException.cs" />
     <Compile Include="DeleteListException.cs" />
+    <Compile Include="EmptyListExeption.cs" />
     <Compile Include="List.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

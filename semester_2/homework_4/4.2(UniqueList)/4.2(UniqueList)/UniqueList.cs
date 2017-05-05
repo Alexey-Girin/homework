@@ -1,65 +1,31 @@
 ﻿namespace ListNamespace
 {
-    using System;
-
     /// <summary>
     /// Список без повторяющихся значений. 
     /// </summary>
-    public class UniqueList : List
+    public class UniqueList<T> : List<T>
     {
-        public UniqueList() => this.head = null;
-
         /// <summary>
-        /// Добавление значения в UniqueList.
+        /// Конструктор экземпляра класса <see cref="UniqueList"/>.
         /// </summary>
-        /// <param name="value">Добавляемое значение.</param>
-        public override void Add(int value)
+        public UniqueList()
+            :base()
         {
-            ListElement position = head;
-            while (position != null)
-            {
-                if (position.Value == value)
-                {
-                    throw new AddListException("Попытка добавления существующего элемента");
-                }
-
-                position = position.Next;
-            }
-
-            ListElement newElement = new ListElement(value, head);
-            head = newElement;
         }
 
         /// <summary>
-        /// Удаление знаечния из UniqueList.
+        /// Добавление элемента в <see cref="UniqueList{T}"/>.
         /// </summary>
-        /// <param name="value">Значение удаляемого элемента.</param>
-        public override void Delete(int value)
+        /// <param name="value">Значение добавляемого элемента.</param>
+        /// <param name="addPosition">Позиция добавляемого элемента.</param>
+        public override void Add(T value, int addPosition)
         {
-            if (head == null)
+            if(IsBelong(value))
             {
-                throw new DeleteListException("Попытка удаления несуществующего элемента");
+                throw new AddListException("добаление уже существующего элемента в список");
             }
 
-            if (head.Value == value)
-            {
-                head = head.Next;
-                return;
-            }
-
-            ListElement position = head;
-            while (position.Next != null)
-            {
-                if (position.Next.Value == value)
-                {
-                    position.Next = position.Next.Next;
-                    return;
-                }
-
-                position = position.Next;
-            }
-
-            throw new DeleteListException("Попытка удаления несуществующего элемента");
+            base.Add(value, addPosition);
         }
     }
 }
