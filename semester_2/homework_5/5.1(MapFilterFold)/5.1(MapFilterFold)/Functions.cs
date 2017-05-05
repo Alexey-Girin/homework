@@ -6,7 +6,7 @@
     /// <summary>
     /// Класс, реализующий функции.
     /// </summary>
-    public class Functions
+    public static class Functions
     {
         /// <summary>
         /// Функция Map.
@@ -14,14 +14,16 @@
         /// <param name="list">Принимаемый список.</param>
         /// <param name="func">Принимаемая функция.</param>
         /// <returns>Список, полученный применением принимаемой функции к элементам принимаемого списка.</returns>
-        public List<int> Map(List<int> list, Func<int, int> func)
+        public static List<int> Map(List<int> list, Func<int, int> func)
         {
-            for (int i = 0; i < list.Count; i++)
+            var resultList = new List<int>();
+
+            foreach(var element in list)
             {
-                list[i] = func(list[i]);
+                resultList.Add(func(element));
             }
 
-            return list;
+            return resultList;
         }
 
         /// <summary>
@@ -30,15 +32,15 @@
         /// <param name="list">Принимаемый список.</param>
         /// <param name="func">Принимаемая функция.</param>
         /// <returns>Список из элементов принимаемого списка, элементы которого удовлетворяют условию функции.</returns>
-        public List<int> Filter(List<int> list, Func<int, bool> func)
+        public static List<int> Filter(List<int> list, Func<int, bool> func)
         {
-            List<int> resultList = new List<int>();
+            var resultList = new List<int>();
 
-            foreach (int elem in list)
+            foreach (var element in list)
             {
-                if (func(elem))
+                if (func(element))
                 {
-                    resultList.Add(elem);
+                    resultList.Add(element);
                 }
             }
 
@@ -46,17 +48,17 @@
         }
 
         /// <summary>
-        /// Функция Fold/
+        /// Функция Fold.
         /// </summary>
         /// <param name="list">Принимаемый список.</param>
         /// <param name="initial">Начальное значение.</param>
         /// <param name="func">Принимаемая функция.</param>
         /// <returns>Накопленное значение.</returns>
-        public int Fold(List<int> list, int initial, Func<int, int, int> func)
+        public static int Fold(List<int> list, int initial, Func<int, int, int> func)
         {
-            foreach (int elem in list)
+            foreach (int element in list)
             {
-                initial = func(initial, elem);
+                initial = func(initial, element);
             }
 
             return initial;
