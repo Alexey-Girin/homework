@@ -13,7 +13,7 @@
         }
 
         [TestMethod]
-        [ExpectedException(typeof(Exception))]
+        [ExpectedException(typeof(DivideByZeroException))]
         public void EmptуExpressionTest()
         {
             double result = parseTree.Calculate("(/ 1 0)");
@@ -26,6 +26,6 @@
             Assert.AreEqual(result, -0.25);
         }
 
-        ParseTree parseTree;
+        private ParseTree parseTree;
     }
 }

@@ -12,13 +12,14 @@
         /// </summary>
         private abstract class Node
         {
-            public Node leftSon;
-            public Node rightSon;
+            public Node LeftSon { get; set; }
+            public Node RightSon { get; set; }
 
+            /// <summary>
+            /// Конструктор экземпляра класса <see cref="Node"/>.
+            /// </summary>
             public Node()
             {
-                leftSon = null;
-                rightSon = null;
             }
 
             /// <summary>
@@ -40,6 +41,10 @@
         {
             private double operand;
 
+            /// <summary>
+            /// Конструктор экземпляра класса <see cref="Operand"/>.
+            /// </summary>
+            /// <param name="value">Значение операнда.</param>
             public Operand(int value) => operand = 1.0 * value;
 
             /// <summary>
@@ -61,6 +66,10 @@
         {
             private char @operator;
 
+            /// <summary>
+            /// Конструктор экземпляра класса <see cref="Operator"/>.
+            /// </summary>
+            /// <param name="value">Знак операции.</param>
             public Operator(char value) => @operator = value;
 
             /// <summary>
@@ -69,8 +78,8 @@
             /// <returns>Результат операции.</returns>
             public override double CalculateNode()
             {
-                double firstNum = leftSon.CalculateNode();
-                double secondNum = rightSon.CalculateNode();
+                double firstNum = LeftSon.CalculateNode();
+                double secondNum = RightSon.CalculateNode();
                 return BinaryOperation(@operator, firstNum, secondNum);
             }
 
@@ -85,20 +94,20 @@
             {
                 switch (sign)
                 {
-                    case ('+'):
+                    case '+':
                         return firstNum + secondNum;
-                    case ('-'):
+                    case '-':
                         return firstNum - secondNum;
-                    case ('*'):
+                    case '*':
                         return firstNum * secondNum;
-                    case ('/'):
+                    case '/':
                         if (secondNum == 0)
                         {
-                            throw new Exception("деление на ноль");
+                            throw new DivideByZeroException("деление на ноль");
                         }
                         return firstNum / secondNum;
                     default:
-                        throw new Exception();
+                        throw new InputException("некорректное выражение");
                 }
             }
 
@@ -109,8 +118,8 @@
             {
                 Console.Write("( " + @operator + " ");
 
-                leftSon.Print();
-                rightSon.Print();
+                LeftSon.Print();
+                RightSon.Print();
 
                 Console.Write(") ");
             }
@@ -118,7 +127,12 @@
 
         private Operator root;
 
-        public ParseTree() => this.root = null;
+        /// <summary>
+        /// Конструктор экзмепляра класса <see cref="ParseTree"/>.
+        /// </summary>
+        public ParseTree()
+        {
+        }
 
         /// <summary>
         /// Вычисление значения выражения через дерево разбора (построение, печать, вычисление).
@@ -142,6 +156,7 @@
         /// <returns>Корень построенного дерева разбора.</returns>
         private Operator BuildTree(string expression)
         {
+            IsOperator(expression[1]);
             Operator localRoot = new Operator(expression[1]);
 
             int closeBracket;
@@ -150,7 +165,7 @@
             if (expression[openBracket] == '(')
             {
                 closeBracket = FindCloseBracket(expression, openBracket);
-                localRoot.leftSon = BuildTree(
+                localRoot.LeftSon = BuildTree(
                     expression.Substring(openBracket, closeBracket - openBracket + 1));
                 openBracket = closeBracket + 2;
             }
@@ -165,13 +180,14 @@
 
                 openBracket += endPosition + 1;
 
-                localRoot.leftSon = new Operand(Convert.ToInt32(operand, 10));
+                IsOperand(operand);
+                localRoot.LeftSon = new Operand(Convert.ToInt32(operand, 10));
             }
 
             if (expression[openBracket] == '(')
             {
                 closeBracket = FindCloseBracket(expression, openBracket);
-                localRoot.rightSon = BuildTree(
+                localRoot.RightSon = BuildTree(
                     expression.Substring(openBracket, closeBracket - openBracket + 1));
             }
             else
@@ -179,7 +195,8 @@
                 int expressionSize = expression.Length;
                 string operand = expression.Substring(openBracket, expressionSize - openBracket - 1);
 
-                localRoot.rightSon = new Operand(Convert.ToInt32(operand, 10));
+                IsOperand(operand);
+                localRoot.RightSon = new Operand(Convert.ToInt32(operand, 10));
             }
 
             return localRoot;
@@ -215,7 +232,37 @@
                 }
             }
 
-            throw new Exception();
+            throw new InputException("некорректное выражение");
+        }
+
+        /// <summary>
+        /// Проверка символа на знак операции.
+        /// </summary>
+        /// <param name="symbol">Проверяемый символ.</param>
+        /// <returns></returns>
+        private void IsOperator(char symbol)
+        {
+            if (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/')
+            {
+                return;
+            }
+
+            throw new InputException("некорректное выражение");
+        }
+
+        /// <summary>
+        /// Проверка выражения на число.
+        /// </summary>
+        /// <param name="expression">Проверяемое выражение.</param>
+        private void IsOperand(string expression)
+        {
+            foreach(char symbol in expression)
+            {
+                if (symbol < '0' || symbol > '9')
+                {
+                    throw new InputException("некорректное выражение");
+                }
+            }
         }
     }
 }
