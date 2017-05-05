@@ -10,6 +10,9 @@
         public void Initialize()
         {
             set = new Set<int>();
+            firstSet = new Set<int>();
+            secondSet = new Set<int>();
+
         }
 
         [TestMethod]
@@ -46,75 +49,68 @@
         [TestMethod]
         public void UnionTest1()
         {
-            var secondSet = new Set<int>();
-            secondSet.Add(1);
+            firstSet.Add(1);
+            firstSet.Add(2);
+
+            secondSet.Add(2);
             secondSet.Add(3);
 
-            set.Add(2);
-            set.Add(4);
-            set.Add(1);
+            var trueResultSet = new Set<int>();
+            trueResultSet.Add(1);
+            trueResultSet.Add(2);
+            trueResultSet.Add(3);
 
-            set.Union(secondSet);
-
-            var resultSet = new Set<int>();
-            resultSet.Add(1);
-            resultSet.Add(2);
-            resultSet.Add(3);
-            resultSet.Add(4);
-
-            Assert.IsTrue(set.AreEqual(resultSet));
+            var resultSet = SetOperations<int>.Union(firstSet, secondSet);
+            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
         public void UnionTest2()
         {
-            var secondSet = new Set<int>();
+            firstSet.Add(1);
+            firstSet.Add(2);
 
-            set.Add(1);
-            set.Add(2);
+            var trueResultSet = new Set<int>();
+            trueResultSet.Add(1);
+            trueResultSet.Add(2);
 
-            set.Union(secondSet);
-
-            var resultSet = new Set<int>();
-            resultSet.Add(1);
-            resultSet.Add(2);
-
-            Assert.IsTrue(set.AreEqual(resultSet));
+            var resultSet = SetOperations<int>.Union(firstSet, secondSet);
+            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
         public void IntersectionTest1()
         {
-            var secondSet = new Set<int>();
+            firstSet.Add(1);
+            firstSet.Add(2);
 
-            set.Add(1);
-            set.Add(2);
+            secondSet.Add(2);
+            secondSet.Add(3);
 
-            set.Intersection(secondSet);
+            var trueResultSet = new Set<int>();
+            trueResultSet.Add(2);
 
-            var resultSet = new Set<int>();
-
-            Assert.IsTrue(set.AreEqual(resultSet));
+            var resultSet = SetOperations<int>.Intersection(firstSet, secondSet);
+            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
         public void IntersectionTest2()
         {
-            var secondSet = new Set<int>();
-            secondSet.Add(1);
+            firstSet.Add(1);
+            firstSet.Add(2);
+
             secondSet.Add(3);
+            secondSet.Add(4);
 
-            set.Add(1);
-            set.Add(2);
+            var trueResultSet = new Set<int>();
 
-            set.Intersection(secondSet);
-
-            var resultSet = new Set<int>();
-            resultSet.Add(1);
-
-            Assert.IsTrue(set.AreEqual(resultSet));
+            var resultSet = SetOperations<int>.Intersection(firstSet, secondSet);
+            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
         }
 
-        Set<int> set;
+        private Set<int> set;
+        private Set<int> firstSet;
+        private Set<int> secondSet;
     }
 }
