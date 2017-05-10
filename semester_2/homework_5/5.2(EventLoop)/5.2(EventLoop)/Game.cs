@@ -23,7 +23,7 @@
         /// </summary>
         public void OnRight(object sender, EventArgs args)
         {
-            if (Console.CursorLeft < Console.WindowWidth - 1)
+            if (Console.CursorLeft < Console.BufferWidth - 1)
             {
                 ++Console.CursorLeft;
             }
@@ -45,7 +45,10 @@
         /// </summary>
         public void OnDown(object sender, EventArgs args)
         {
-            ++Console.CursorTop;
+            if (Console.CursorTop < Console.BufferHeight - 1)
+            {
+                ++Console.CursorTop;
+            }
         }
     }
 }
