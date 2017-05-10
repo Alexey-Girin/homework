@@ -23,14 +23,6 @@
         }
 
         [TestMethod]
-        [ExpectedException(typeof(AddSetExeption))]
-        public void AddExistentTest()
-        {
-            set.Add(1);
-            set.Add(1);
-        }
-
-        [TestMethod]
         public void DeleteTest()
         {
             set.Add(1);
@@ -60,8 +52,8 @@
             trueResultSet.Add(2);
             trueResultSet.Add(3);
 
-            var resultSet = SetOperations<int>.Union(firstSet, secondSet);
-            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
+            var resultSet = Set<int>.SetOperations.Union(firstSet, secondSet);
+            Assert.IsTrue(Set<int>.SetOperations.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
@@ -74,8 +66,8 @@
             trueResultSet.Add(1);
             trueResultSet.Add(2);
 
-            var resultSet = SetOperations<int>.Union(firstSet, secondSet);
-            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
+            var resultSet = Set<int>.SetOperations.Union(firstSet, secondSet);
+            Assert.IsTrue(Set<int>.SetOperations.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
@@ -90,8 +82,8 @@
             var trueResultSet = new Set<int>();
             trueResultSet.Add(2);
 
-            var resultSet = SetOperations<int>.Intersection(firstSet, secondSet);
-            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
+            var resultSet = Set<int>.SetOperations.Intersection(firstSet, secondSet);
+            Assert.IsTrue(Set<int>.SetOperations.AreEqual(trueResultSet, resultSet));
         }
 
         [TestMethod]
@@ -105,8 +97,8 @@
 
             var trueResultSet = new Set<int>();
 
-            var resultSet = SetOperations<int>.Intersection(firstSet, secondSet);
-            Assert.IsTrue(SetOperations<int>.AreEqual(trueResultSet, resultSet));
+            var resultSet = Set<int>.SetOperations.Intersection(firstSet, secondSet);
+            Assert.IsTrue(Set<int>.SetOperations.AreEqual(trueResultSet, resultSet));
         }
 
         private Set<int> set;

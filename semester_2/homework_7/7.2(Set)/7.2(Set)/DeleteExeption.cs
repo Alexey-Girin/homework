@@ -17,7 +17,7 @@
         /// <summary>
         /// Конструктор экземпляра класса <see cref="DeleteExeption"/>.
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Сообщение.</param>
         public DeleteExeption(string message)
             : base(message)
         {
