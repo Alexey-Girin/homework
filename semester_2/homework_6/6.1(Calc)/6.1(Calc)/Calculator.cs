@@ -18,7 +18,6 @@
             operationSign,
             negation,
             delimiter,
-            deleting,
             deletingAfterDelimiter,
             equality
         };
@@ -49,7 +48,7 @@
         public Calculator()
         {
             InitializeComponent();
-            textBox.Text = currentNumber;
+            display.Text = currentNumber;
         }
 
         /// <summary>
@@ -59,19 +58,24 @@
         {
             var button = sender as Button;
 
+            if (currentNumber.Length > 8)
+            {
+                return;
+            }
+
             if (currentState == State.numeral ||
                 currentState == State.negation)
             {
                 if (currentNumber == "0")
                 {
                     currentNumber = button.Text;
-                    textBox.Text = button.Text;
+                    display.Text = button.Text;
                     currentState = State.numeral;
                     return;
                 }
 
                 currentNumber += button.Text;
-                textBox.Text += button.Text;
+                display.Text += button.Text;
                 currentState = State.numeral;
                 return;
             }  
@@ -80,7 +84,7 @@
                 currentState == State.delimiter)
             {
                 currentNumber += button.Text;
-                textBox.Text += button.Text;
+                display.Text += button.Text;
                 currentState = State.numeral;
                 return;
             }
@@ -88,7 +92,7 @@
             if (currentState == State.equality)
             {
                 currentNumber = button.Text;
-                textBox.Text = button.Text;
+                display.Text = button.Text;
                 currentState = State.numeral;
             }
         }
@@ -107,12 +111,12 @@
 
             if (currentOperator != ' ')
             {
-                var index = textBox.Text.IndexOf(currentOperator);
+                var operatorIndex = display.Text.Substring(1).IndexOf(currentOperator) + 1;
 
                 if (currentOperator == '+')
                 {
-                    textBox.Text = textBox.Text.Substring(0, index) + "-" +
-                        textBox.Text.Substring(index + 1);
+                    display.Text = display.Text.Substring(0, operatorIndex) + "-" +
+                        display.Text.Substring(operatorIndex + 1);
                     currentState = State.negation;
                     currentOperator = '-';
                     return;
@@ -120,28 +124,28 @@
 
                 if (currentOperator == '-')
                 {
-                    textBox.Text = textBox.Text.Substring(0, index) + "+" +
-                        textBox.Text.Substring(index + 1);
+                    display.Text = display.Text.Substring(0, operatorIndex) + "+" +
+                        display.Text.Substring(operatorIndex + 1);
                     currentState = State.negation;
                     currentOperator = '+';
                     return;
                 }
 
-                startPosition = index + 2;
+                startPosition = operatorIndex + 2;
             }
 
             if (currentNumber[0] == '-')
             {
                 
                 currentNumber = currentNumber.Substring(1);
-                textBox.Text = textBox.Text.Remove(startPosition, 1);
+                display.Text = display.Text.Remove(startPosition, 1);
             }
             else
             {
                 if (currentNumber != "0")
                 {
                     currentNumber = "-" + currentNumber;
-                    textBox.Text = textBox.Text.Insert(startPosition, "-");
+                    display.Text = display.Text.Insert(startPosition, "-");
                 }
             }
 
@@ -160,7 +164,7 @@
             }
 
             currentNumber += ",";
-            textBox.Text += ",";
+            display.Text += ",";
 
             currentState = State.delimiter;
         }
@@ -171,7 +175,7 @@
         private void OnButtonCClick(object sender, EventArgs e)
         {
             currentNumber = "0";
-            textBox.Text = currentNumber;
+            display.Text = currentNumber;
             result = 0;
             currentState = State.numeral;
         }
@@ -184,13 +188,13 @@
             var button = sender as Button;
             var @operator = button.Text[0];
 
-            if (textBox.Text.Contains(currentOperator) &&
-                textBox.Text[textBox.Text.Length - 2] != currentOperator)
+            if (display.Text.Contains(currentOperator) &&
+                display.Text[display.Text.Length - 2] != currentOperator)
             {
                 var secondOperand = ConvertToDouble(currentNumber);
                 result = Calculation(secondOperand);
                 currentNumber = result.ToString();
-                textBox.Text = currentNumber;
+                display.Text = currentNumber;
                 currentState = State.equality;
             }
 
@@ -199,16 +203,16 @@
             switch (currentState)
             {
                 case State.operationSign:
-                    textBox.Text = textBox.Text.Remove(textBox.Text.Length - 2) + currentOperator + " ";
+                    display.Text = display.Text.Remove(display.Text.Length - 2) + currentOperator + " ";
                     break;
                 case State.equality:
                     currentNumber = "0";
-                    textBox.Text += " " + currentOperator + " ";
+                    display.Text += " " + currentOperator + " ";
                     break;
                 default:
                     result = ConvertToDouble(currentNumber);
                     currentNumber = "0";
-                    textBox.Text = result.ToString() + " " + currentOperator + " ";
+                    display.Text = result.ToString() + " " + currentOperator + " ";
                     break;
             }
 
@@ -226,7 +230,8 @@
             {
                 if (currentOperator == ' ')
                 {
-                    textBox.Text = ConvertToDouble(currentNumber).ToString();
+                    display.Text = ConvertToDouble(currentNumber).ToString();
+                    currentNumber = display.Text;
                     currentState = State.numeral;
                     return;
                 }
@@ -234,7 +239,7 @@
                 var secondOperand = ConvertToDouble(currentNumber);
                 result = Calculation(secondOperand);
                 currentNumber = result.ToString();
-                textBox.Text = currentNumber;
+                display.Text = currentNumber;
                 currentOperator = ' ';
 
                 currentState = State.equality;
@@ -287,7 +292,7 @@
                     if (secondOperand == 0)
                     {
                         currentNumber = "0";
-                        textBox.Text = currentNumber;
+                        display.Text = currentNumber;
                         result = 0;
                         currentState = State.numeral;
                         return 0;
@@ -302,6 +307,34 @@
                 default:
                     throw new InputExeption();
             }
+        }
+
+        /// <summary>
+        /// Удаление введенного числа.
+        /// </summary>
+        private void OnButtonCEClick(object sender, EventArgs e)
+        {
+            if (currentState != State.numeral &&
+                currentState != State.negation &&
+                currentState != State.delimiter &&
+                currentState != State.equality)
+            {
+                return;
+            }
+
+            currentNumber = "0";
+
+            if (currentOperator != ' ')
+            {
+                var operatorIndex = display.Text.Substring(1).IndexOf(currentOperator) + 1;
+                display.Text = display.Text.Remove(operatorIndex + 2);
+                currentState = State.operationSign;
+                return;
+            }
+
+            display.Text = currentNumber;
+            result = 0;
+            currentState = State.numeral;
         }
     }
 }
