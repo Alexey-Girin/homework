@@ -18,8 +18,8 @@
             operationSign,
             negation,
             delimiter,
-            deletingAfterDelimiter,
-            equality
+            equality,
+            message
         };
 
         /// <summary>
@@ -64,13 +64,13 @@
             }
 
             if (currentState == State.numeral ||
-                currentState == State.negation)
+                currentState == State.negation ||
+                currentState == State.message)
             {
                 if (currentNumber == "0")
                 {
                     currentNumber = button.Text;
                     display.Text = button.Text;
-                    currentState = State.numeral;
                     return;
                 }
 
@@ -107,27 +107,26 @@
                 return;
             }
 
+            if (currentState == State.message)
+            {
+                Remove();
+                return;
+            }
+
             var startPosition = 0;
 
             if (currentOperator != ' ')
             {
                 var operatorIndex = display.Text.Substring(1).IndexOf(currentOperator) + 1;
 
-                if (currentOperator == '+')
+                if (currentOperator == '+' ||
+                    currentOperator == '-')
                 {
-                    display.Text = display.Text.Substring(0, operatorIndex) + "-" +
+                    var sign = (currentOperator == '+') ? '-' : '+';
+                    display.Text = display.Text.Substring(0, operatorIndex) + sign +
                         display.Text.Substring(operatorIndex + 1);
                     currentState = State.negation;
-                    currentOperator = '-';
-                    return;
-                }
-
-                if (currentOperator == '-')
-                {
-                    display.Text = display.Text.Substring(0, operatorIndex) + "+" +
-                        display.Text.Substring(operatorIndex + 1);
-                    currentState = State.negation;
-                    currentOperator = '+';
+                    currentOperator = sign;
                     return;
                 }
 
@@ -162,6 +161,11 @@
             {
                 return;
             }
+            
+            if (currentState == State.message)
+            {
+                Remove();
+            }
 
             currentNumber += ",";
             display.Text += ",";
@@ -172,27 +176,36 @@
         /// <summary>
         /// Обработка события нажатия на кнопку полной отмены операции.
         /// </summary>
-        private void OnButtonCClick(object sender, EventArgs e)
-        {
-            currentNumber = "0";
-            display.Text = currentNumber;
-            result = 0;
-            currentState = State.numeral;
-        }
+        private void OnButtonCClick(object sender, EventArgs e) => Remove();
 
         /// <summary>
         /// Обработка события нажатия на кнопку операции.
         /// </summary>
         private void OnButtonOperationClick(object sender, EventArgs e)
         {
+            if (currentState == State.message)
+            {
+                Remove();
+                return;
+            }
+
             var button = sender as Button;
             var @operator = button.Text[0];
 
             if (display.Text.Contains(currentOperator) &&
                 display.Text[display.Text.Length - 2] != currentOperator)
             {
-                var secondOperand = ConvertToDouble(currentNumber);
-                result = Calculation(secondOperand);
+                var secondOperand = Convert.ToDouble(currentNumber);
+
+                try
+                {
+                    result = Calculation(secondOperand);
+                }
+                catch(DivideByZeroException)
+                {
+                    return;
+                }
+
                 currentNumber = result.ToString();
                 display.Text = currentNumber;
                 currentState = State.equality;
@@ -210,7 +223,7 @@
                     display.Text += " " + currentOperator + " ";
                     break;
                 default:
-                    result = ConvertToDouble(currentNumber);
+                    result = Convert.ToDouble(currentNumber);
                     currentNumber = "0";
                     display.Text = result.ToString() + " " + currentOperator + " ";
                     break;
@@ -224,89 +237,42 @@
         /// </summary>
         private void OnButtonEqualityClick(object sender, EventArgs e)
         {
-            if(currentState == State.numeral ||
-                currentState == State.negation ||
-                currentState == State.delimiter)
+            if (currentState == State.message)
             {
-                if (currentOperator == ' ')
-                {
-                    display.Text = ConvertToDouble(currentNumber).ToString();
-                    currentNumber = display.Text;
-                    currentState = State.numeral;
-                    return;
-                }
+                Remove();
+                return;
+            }
 
-                var secondOperand = ConvertToDouble(currentNumber);
+            if (currentState == State.operationSign ||
+                currentState == State.equality)
+            {
+                return;
+            }
+
+            if (currentOperator == ' ')
+            {
+                display.Text = Convert.ToDouble(currentNumber).ToString();
+                currentNumber = display.Text;
+                currentState = State.numeral;
+                return;
+            }
+
+            var secondOperand = Convert.ToDouble(currentNumber);
+
+            try
+            {
                 result = Calculation(secondOperand);
-                currentNumber = result.ToString();
-                display.Text = currentNumber;
-                currentOperator = ' ';
-
-                currentState = State.equality;
             }
-        }
-
-        /// <summary>
-        /// Метод для конвертирования числа из string в double/
-        /// </summary>
-        /// <param name="numString">Строка для конвертирования.</param>
-        /// <returns>Результат конвертирования.</returns>
-        public double ConvertToDouble(string numString)
-        {
-            int delimiterPosition = numString.IndexOf(",");
-
-            if (delimiterPosition == -1)
+            catch (DivideByZeroException)
             {
-                return Convert.ToInt32(numString);
+                return;
             }
 
-            string wholePart = numString.Substring(0, delimiterPosition);
-            string fraction = numString.Substring(delimiterPosition + 1);
+            currentNumber = result.ToString();
+            display.Text = currentNumber;
+            currentOperator = ' ';
 
-            if (fraction.Length == 0)
-            {
-                return Convert.ToInt32(wholePart);
-            }
-
-            int sign = 1;
-
-            if (wholePart[0] == '-')
-            {
-                sign = -1;
-            }
-
-            return Convert.ToInt32(wholePart) +
-                Convert.ToInt32(fraction) * Math.Pow(10, -fraction.Length) * sign;
-        }
-
-        /// <summary>
-        /// Метод выполнения бинарной операции.
-        /// </summary>
-        /// <param name="secondOperand">Второй операнд.</param>
-        /// <returns>Результат выполнения операции.</returns>
-        private double Calculation(double secondOperand)
-        {
-            switch (currentOperator)
-            {
-                case '/':
-                    if (secondOperand == 0)
-                    {
-                        currentNumber = "0";
-                        display.Text = currentNumber;
-                        result = 0;
-                        currentState = State.numeral;
-                        return 0;
-                    }
-                    return result / secondOperand;
-                case '*':
-                    return result * secondOperand;
-                case '-':
-                    return result - secondOperand;
-                case '+':
-                    return result + secondOperand;
-                default:
-                    throw new InputExeption();
-            }
+            currentState = State.equality;
         }
 
         /// <summary>
@@ -314,10 +280,7 @@
         /// </summary>
         private void OnButtonCEClick(object sender, EventArgs e)
         {
-            if (currentState != State.numeral &&
-                currentState != State.negation &&
-                currentState != State.delimiter &&
-                currentState != State.equality)
+            if (currentState == State.operationSign)
             {
                 return;
             }
@@ -335,6 +298,47 @@
             display.Text = currentNumber;
             result = 0;
             currentState = State.numeral;
+        }
+
+        /// <summary>
+        /// Переход калькулятора в стартовое положение.
+        /// </summary>
+        private void Remove()
+        {
+            currentNumber = "0";
+            currentOperator = ' ';
+            display.Text = currentNumber;
+            result = 0;
+            currentState = State.numeral;
+        }
+
+        /// <summary>
+        /// Метод выполнения бинарной операции.
+        /// </summary>
+        /// <param name="secondOperand">Второй операнд.</param>
+        /// <returns>Результат выполнения операции.</returns>
+        private double Calculation(double secondOperand)
+        {
+            switch (currentOperator)
+            {
+                case '/':
+                    if (secondOperand == 0)
+                    {
+                        Remove();
+                        currentState = State.message;
+                        display.Text = "деление на ноль";
+                        throw new DivideByZeroException();
+                    }
+                    return result / secondOperand;
+                case '*':
+                    return result * secondOperand;
+                case '-':
+                    return result - secondOperand;
+                case '+':
+                    return result + secondOperand;
+                default:
+                    throw new InputExeption();
+            }
         }
     }
 }
