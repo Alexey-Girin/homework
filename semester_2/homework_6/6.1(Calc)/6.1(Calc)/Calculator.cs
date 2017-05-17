@@ -14,18 +14,18 @@
         /// </summary>
         private enum State
         {
-            numeral,
-            operationSign,
-            negation,
-            delimiter,
-            equality,
-            message
+            Numeral,
+            OperationSign,
+            Negation,
+            Delimiter,
+            Equality,
+            Message
         };
 
         /// <summary>
         /// Текущее событие.
         /// </summary>
-        private State currentState = State.numeral;
+        private State currentState = State.Numeral;
 
         /// <summary>
         /// Текущий результат вычисления.
@@ -63,9 +63,9 @@
                 return;
             }
 
-            if (currentState == State.numeral ||
-                currentState == State.negation ||
-                currentState == State.message)
+            if (currentState == State.Numeral
+                || currentState == State.Negation
+                || currentState == State.Message)
             {
                 if (currentNumber == "0")
                 {
@@ -76,24 +76,24 @@
 
                 currentNumber += button.Text;
                 display.Text += button.Text;
-                currentState = State.numeral;
+                currentState = State.Numeral;
                 return;
             }  
             
-            if (currentState == State.operationSign ||
-                currentState == State.delimiter)
+            if (currentState == State.OperationSign
+                || currentState == State.Delimiter)
             {
                 currentNumber += button.Text;
                 display.Text += button.Text;
-                currentState = State.numeral;
+                currentState = State.Numeral;
                 return;
             }
 
-            if (currentState == State.equality)
+            if (currentState == State.Equality)
             {
                 currentNumber = button.Text;
                 display.Text = button.Text;
-                currentState = State.numeral;
+                currentState = State.Numeral;
             }
         }
 
@@ -102,12 +102,12 @@
         /// </summary>
         private void OnButtonNegationClick(object sender, EventArgs e)
         {
-            if (currentState == State.operationSign)
+            if (currentState == State.OperationSign)
             {
                 return;
             }
 
-            if (currentState == State.message)
+            if (currentState == State.Message)
             {
                 Remove();
                 return;
@@ -119,13 +119,13 @@
             {
                 var operatorIndex = display.Text.Substring(1).IndexOf(currentOperator) + 1;
 
-                if (currentOperator == '+' ||
-                    currentOperator == '-')
+                if (currentOperator == '+'
+                    || currentOperator == '-')
                 {
                     var sign = (currentOperator == '+') ? '-' : '+';
                     display.Text = display.Text.Substring(0, operatorIndex) + sign +
                         display.Text.Substring(operatorIndex + 1);
-                    currentState = State.negation;
+                    currentState = State.Negation;
                     currentOperator = sign;
                     return;
                 }
@@ -134,21 +134,17 @@
             }
 
             if (currentNumber[0] == '-')
-            {
-                
+            { 
                 currentNumber = currentNumber.Substring(1);
                 display.Text = display.Text.Remove(startPosition, 1);
             }
-            else
+            else if (currentNumber != "0")
             {
-                if (currentNumber != "0")
-                {
-                    currentNumber = "-" + currentNumber;
-                    display.Text = display.Text.Insert(startPosition, "-");
-                }
+                currentNumber = "-" + currentNumber;
+                display.Text = display.Text.Insert(startPosition, "-");
             }
 
-            currentState = State.negation;
+            currentState = State.Negation;
         }
 
         /// <summary>
@@ -156,13 +152,13 @@
         /// </summary>
         private void OnButtonDelimiterClick(object sender, EventArgs e)
         {
-            if (currentNumber.Contains(",") || 
-                currentState == State.operationSign)
+            if (currentNumber.Contains(",")
+                || currentState == State.OperationSign)
             {
                 return;
             }
             
-            if (currentState == State.message)
+            if (currentState == State.Message)
             {
                 Remove();
             }
@@ -170,7 +166,7 @@
             currentNumber += ",";
             display.Text += ",";
 
-            currentState = State.delimiter;
+            currentState = State.Delimiter;
         }
 
         /// <summary>
@@ -183,7 +179,7 @@
         /// </summary>
         private void OnButtonOperationClick(object sender, EventArgs e)
         {
-            if (currentState == State.message)
+            if (currentState == State.Message)
             {
                 Remove();
                 return;
@@ -192,33 +188,30 @@
             var button = sender as Button;
             var @operator = button.Text[0];
 
-            if (display.Text.Contains(currentOperator) &&
-                display.Text[display.Text.Length - 2] != currentOperator)
+            if (display.Text.Contains(currentOperator)
+                && display.Text[display.Text.Length - 2] != currentOperator)
             {
                 var secondOperand = Convert.ToDouble(currentNumber);
-
-                try
-                {
-                    result = Calculation(secondOperand);
-                }
-                catch(DivideByZeroException)
+                result = Calculation(secondOperand);
+                
+                if (currentState == State.Message)
                 {
                     return;
                 }
 
                 currentNumber = result.ToString();
                 display.Text = currentNumber;
-                currentState = State.equality;
+                currentState = State.Equality;
             }
 
             currentOperator = @operator;
 
             switch (currentState)
             {
-                case State.operationSign:
+                case State.OperationSign:
                     display.Text = display.Text.Remove(display.Text.Length - 2) + currentOperator + " ";
                     break;
-                case State.equality:
+                case State.Equality:
                     currentNumber = "0";
                     display.Text += " " + currentOperator + " ";
                     break;
@@ -229,7 +222,7 @@
                     break;
             }
 
-            currentState = State.operationSign;
+            currentState = State.OperationSign;
         }
 
         /// <summary>
@@ -237,14 +230,14 @@
         /// </summary>
         private void OnButtonEqualityClick(object sender, EventArgs e)
         {
-            if (currentState == State.message)
+            if (currentState == State.Message)
             {
                 Remove();
                 return;
             }
 
-            if (currentState == State.operationSign ||
-                currentState == State.equality)
+            if (currentState == State.OperationSign 
+                || currentState == State.Equality)
             {
                 return;
             }
@@ -253,17 +246,14 @@
             {
                 display.Text = Convert.ToDouble(currentNumber).ToString();
                 currentNumber = display.Text;
-                currentState = State.numeral;
+                currentState = State.Numeral;
                 return;
             }
 
             var secondOperand = Convert.ToDouble(currentNumber);
+            result = Calculation(secondOperand);
 
-            try
-            {
-                result = Calculation(secondOperand);
-            }
-            catch (DivideByZeroException)
+            if (currentState == State.Message)
             {
                 return;
             }
@@ -272,7 +262,7 @@
             display.Text = currentNumber;
             currentOperator = ' ';
 
-            currentState = State.equality;
+            currentState = State.Equality;
         }
 
         /// <summary>
@@ -280,7 +270,7 @@
         /// </summary>
         private void OnButtonCEClick(object sender, EventArgs e)
         {
-            if (currentState == State.operationSign)
+            if (currentState == State.OperationSign)
             {
                 return;
             }
@@ -291,13 +281,13 @@
             {
                 var operatorIndex = display.Text.Substring(1).IndexOf(currentOperator) + 1;
                 display.Text = display.Text.Remove(operatorIndex + 2);
-                currentState = State.operationSign;
+                currentState = State.OperationSign;
                 return;
             }
 
             display.Text = currentNumber;
             result = 0;
-            currentState = State.numeral;
+            currentState = State.Numeral;
         }
 
         /// <summary>
@@ -309,7 +299,7 @@
             currentOperator = ' ';
             display.Text = currentNumber;
             result = 0;
-            currentState = State.numeral;
+            currentState = State.Numeral;
         }
 
         /// <summary>
@@ -325,9 +315,9 @@
                     if (secondOperand == 0)
                     {
                         Remove();
-                        currentState = State.message;
+                        currentState = State.Message;
                         display.Text = "деление на ноль";
-                        throw new DivideByZeroException();
+                        return 0;
                     }
                     return result / secondOperand;
                 case '*':
