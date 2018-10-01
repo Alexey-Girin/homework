@@ -3,20 +3,21 @@
     using System;
 
     /// <summary>
-    /// Класс, представляющий ленивое вычисление (в однопоточном режиме).
+    /// Класс, представляющий ленивое вычисление (в многопоточном режиме).
     /// </summary>
     /// <typeparam name="T">Тип результата вычисления.</typeparam>
-    public class Lazy<T> : ILazy<T>
+    public class MultiThreadedLazy<T> :ILazy<T>
     {
         private Func<T> func;
-        private bool isFirstCall = true;
+        private volatile bool isFirstCall = true;
         private T resultOfCalculation;
+        private Object locker = new Object();
 
         /// <summary>
-        /// Конструктор экземпляра класса <see cref="Lazy{T}"/>.
+        /// Конструктор экземпляра класса <see cref="MultiThreadedLazy{T}"/>.
         /// </summary>
         /// <param name="supplier">Вычисление.</param>
-        public Lazy(Func<T> supplier) => func = supplier;
+        public MultiThreadedLazy(Func<T> supplier) => func = supplier;
 
         /// <summary>
         /// Метод, первый вызов которого вызывает вычисление,
@@ -25,13 +26,16 @@
         /// <returns>Результат вычисления.</returns>
         public T Get()
         {
-            if(isFirstCall)
+            lock(locker)
             {
-                isFirstCall = false;
-                resultOfCalculation = func();
-            }
+                if (isFirstCall)
+                {
+                    isFirstCall = false;
+                    resultOfCalculation = func();
+                }
 
-            return resultOfCalculation;
+                return resultOfCalculation;
+            }
         }
     }
 }

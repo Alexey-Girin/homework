@@ -46,6 +46,7 @@
     <Compile Include="ILazy.cs" />
     <Compile Include="Lazy.cs" />
     <Compile Include="LazyFactory.cs" />
+    <Compile Include="MultiThreadedLazy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
