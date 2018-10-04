@@ -7,7 +7,7 @@
     public class LazyTests
     {
         [TestMethod]
-        public void SingleThreadedLazyTest_1()
+        public void SingleThreadedLazyShouldCalculateOnce()
         {
             int counter = 0;
             var func = new Func<int>(() => 
@@ -28,7 +28,7 @@
         }
 
         [TestMethod]
-        public void SingleThreadedLazyTest_2()
+        public void SingleThreadedLazyShouldReturnNull()
         {
             var func = new Func<object>(() => { return null; });
             var lazy = LazyFactory.CreateSingleThreadedLazy(func);
@@ -37,7 +37,7 @@
         }
 
         [TestMethod]
-        public void SingleThreadedLazyTest_3()
+        public void SingleThreadedLazyShouldReturnCorrectValue()
         {
             int n = 2;
             var func = new Func<int>(() => n * n);

@@ -8,7 +8,28 @@
     public class MultiThreadedLazyTests
     {
         [TestMethod]
-        public void MultiThreadedLazyTest_1()
+        public void MultiThreadedLazyShouldCalculateOnce()
+        {
+            int counter = 0;
+            var func = new Func<int>(() =>
+            {
+                counter++;
+                return 1;
+            });
+
+            var lazy = LazyFactory.CreateMultiThreadedLazy(func);
+
+            const int trueResult = 1;
+            const int num = 100;
+            for (int i = 0; i < num; i++)
+            {
+                Assert.AreEqual(trueResult, lazy.Get());
+                Assert.AreEqual(trueResult, counter);
+            }
+        }
+
+        [TestMethod]
+        public void MultiThreadedLazyShouldReturnNull()
         {
             var func = new Func<object>(() => { return null; });
             var lazy = LazyFactory.CreateMultiThreadedLazy(func);
@@ -34,7 +55,7 @@
         }
 
         [TestMethod]
-        public void MultiThreadedLazyTest_2()
+        public void MultiThreadedLazyShouldReturnCorrectValue()
         {
             var func = new Func<int>(() => { return 1; });
             var lazy = LazyFactory.CreateMultiThreadedLazy(func);

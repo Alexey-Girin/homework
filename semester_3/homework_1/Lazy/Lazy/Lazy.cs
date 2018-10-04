@@ -25,10 +25,11 @@
         /// <returns>Результат вычисления.</returns>
         public T Get()
         {
-            if(isFirstCall)
+            if (isFirstCall)
             {
                 isFirstCall = false;
                 resultOfCalculation = func();
+                func = null;
             }
 
             return resultOfCalculation;

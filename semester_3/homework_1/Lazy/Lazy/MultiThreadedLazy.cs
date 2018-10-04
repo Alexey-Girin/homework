@@ -26,16 +26,20 @@
         /// <returns>Результат вычисления.</returns>
         public T Get()
         {
-            lock(locker)
+            if (isFirstCall)
             {
-                if (isFirstCall)
+                lock (locker)
                 {
-                    isFirstCall = false;
-                    resultOfCalculation = func();
+                    if (isFirstCall)
+                    {
+                        isFirstCall = false;
+                        resultOfCalculation = func();
+                        func = null;
+                    }
                 }
-
-                return resultOfCalculation;
             }
+
+            return resultOfCalculation;
         }
     }
 }
