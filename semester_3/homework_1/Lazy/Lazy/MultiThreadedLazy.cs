@@ -32,8 +32,8 @@
                 {
                     if (isFirstCall)
                     {
-                        isFirstCall = false;
                         resultOfCalculation = func();
+                        isFirstCall = false;
                         func = null;
                     }
                 }

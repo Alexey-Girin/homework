@@ -18,14 +18,32 @@
             });
 
             var lazy = LazyFactory.CreateMultiThreadedLazy(func);
+            var threads = new Thread[100];
+
+            const int num = 100;
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                threads[i] = new Thread(() =>
+                {
+                    for (int t = 0; t < num; t++)
+                    {
+                        lazy.Get();
+                    }
+                });
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Start();
+            }
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
 
             const int trueResult = 1;
-            const int num = 100;
-            for (int i = 0; i < num; i++)
-            {
-                Assert.AreEqual(trueResult, lazy.Get());
-                Assert.AreEqual(trueResult, counter);
-            }
+            Assert.AreEqual(trueResult, counter);
         }
 
         [TestMethod]
