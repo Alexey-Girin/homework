@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Collections.Concurrent;
 using System.Threading;
 
 namespace MyThreadPool
@@ -10,8 +8,8 @@ namespace MyThreadPool
     {
         private CancellationTokenSource cts = new CancellationTokenSource();
 
-        private Queue<Action> tasks = new Queue<Action>();
-
+        private ConcurrentQueue<Action> tasks = new ConcurrentQueue<Action>();
+        
         private AutoResetEvent resetEvent = new AutoResetEvent(true);
 
         private Thread[] threads;
@@ -22,8 +20,10 @@ namespace MyThreadPool
 
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(new ThreadStart(WorkForThreads));
-                threads[i].Name = $"{i}";
+                threads[i] = new Thread(new ThreadStart(ThreadMethod))
+                {
+                    Name = $"{i}"
+                };
             }
 
             foreach (var thread in threads)
@@ -32,7 +32,7 @@ namespace MyThreadPool
             }
         }
 
-        public void WorkForThreads()
+        public void ThreadMethod()
         {
             while (!cts.IsCancellationRequested)
             {
@@ -44,20 +44,18 @@ namespace MyThreadPool
                     continue;
                 }
 
-                tasks.Dequeue()();
+                tasks.TryDequeue(out Action task);
 
                 resetEvent.Set();
+
+                task();
             }
         }
 
         public MyTask<TResult> AddTask<TResult>(Func<TResult> newFunc)
         {
-            resetEvent.WaitOne();
-
-            MyTask<TResult> newTask = new MyTask<TResult>(newFunc);
+            MyTask<TResult> newTask = new MyTask<TResult>(newFunc, this);
             tasks.Enqueue(newTask.PerformTask);
-
-            resetEvent.Set();
 
             return newTask;
         }

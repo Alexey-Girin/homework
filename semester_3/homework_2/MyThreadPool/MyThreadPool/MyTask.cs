@@ -7,7 +7,7 @@ namespace MyThreadPool
     {
         public bool IsCompleted { get; private set; } = false;
 
-        public string threadName { get; set; }
+        public string ThreadName { get; set; }
 
         public TResult Result
         {
@@ -28,31 +28,36 @@ namespace MyThreadPool
                     throw new AggregateException("Outer exception", outerException);
                 }
 
-                return result;
+                return intermediateResult;
             }
         }
 
         private Exception outerException;
 
-        private TResult result;
+        private TResult intermediateResult;
 
         private Func<TResult> func;
 
-        public MyTask(Func<TResult> newFunc)
-            => func = newFunc;
+        private MyThreadPool threadPool;
+
+        public MyTask(Func<TResult> _Func, MyThreadPool _ThreadPool)
+        {
+            func = _Func;
+            threadPool = _ThreadPool;
+        }
 
         public void PerformTask()
         {
             try
             {
-                result = func();
-                threadName = Thread.CurrentThread.Name;
+                intermediateResult = func();
             }
             catch (Exception exception)
             {
                 outerException = exception;
             }
 
+            ThreadName = Thread.CurrentThread.Name;
             IsCompleted = true;
         }
     }
