@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace MyThreadPool
@@ -9,6 +6,8 @@ namespace MyThreadPool
     public class MyTask<TResult> : IMyTask<TResult>
     {
         public bool IsCompleted { get; private set; } = false;
+
+        public string threadName { get; set; }
 
         public TResult Result
         {
@@ -47,6 +46,7 @@ namespace MyThreadPool
             try
             {
                 result = func();
+                threadName = Thread.CurrentThread.Name;
             }
             catch (Exception exception)
             {

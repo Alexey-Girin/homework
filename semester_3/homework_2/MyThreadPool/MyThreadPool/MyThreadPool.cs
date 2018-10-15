@@ -8,7 +8,11 @@ namespace MyThreadPool
 {
     public class MyThreadPool
     {
+        private CancellationTokenSource cts = new CancellationTokenSource();
+
         private Queue<Action> tasks = new Queue<Action>();
+
+        private AutoResetEvent resetEvent = new AutoResetEvent(true);
 
         private Thread[] threads;
 
@@ -19,6 +23,7 @@ namespace MyThreadPool
             for (int i = 0; i < threads.Length; i++)
             {
                 threads[i] = new Thread(new ThreadStart(WorkForThreads));
+                threads[i].Name = $"{i}";
             }
 
             foreach (var thread in threads)
@@ -29,22 +34,35 @@ namespace MyThreadPool
 
         public void WorkForThreads()
         {
-            while (tasks.Count == 0)
+            while (!cts.IsCancellationRequested)
             {
-                Thread.Sleep(100);
-            }
+                resetEvent.WaitOne();
 
-            var task = tasks.Dequeue();
-            task();
+                if (tasks.Count == 0)
+                {
+                    resetEvent.Set();
+                    continue;
+                }
+
+                tasks.Dequeue()();
+
+                resetEvent.Set();
+            }
         }
 
         public MyTask<TResult> AddTask<TResult>(Func<TResult> newFunc)
         {
-            MyTask<TResult> newTask = new MyTask<TResult>(newFunc);
+            resetEvent.WaitOne();
 
+            MyTask<TResult> newTask = new MyTask<TResult>(newFunc);
             tasks.Enqueue(newTask.PerformTask);
+
+            resetEvent.Set();
 
             return newTask;
         }
+
+        public void Shutdown()
+            => cts.Cancel();
     }
 }
