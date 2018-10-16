@@ -9,21 +9,20 @@ namespace MyThreadPool
         private CancellationTokenSource cts = new CancellationTokenSource();
 
         private ConcurrentQueue<Action> tasks = new ConcurrentQueue<Action>();
-        
+
         private AutoResetEvent resetEvent = new AutoResetEvent(true);
 
         private Thread[] threads;
 
-        public MyThreadPool(int numOfPools)
+        private volatile int countOfActiveThreads;
+
+        public MyThreadPool(int numOfThreads)
         {
-            threads = new Thread[numOfPools];
+            threads = new Thread[numOfThreads];
 
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(new ThreadStart(ThreadMethod))
-                {
-                    Name = $"{i}"
-                };
+                threads[i] = new Thread(new ThreadStart(ThreadMethod));
             }
 
             foreach (var thread in threads)
@@ -34,6 +33,8 @@ namespace MyThreadPool
 
         public void ThreadMethod()
         {
+            countOfActiveThreads++;
+
             while (!cts.IsCancellationRequested)
             {
                 resetEvent.WaitOne();
@@ -50,6 +51,8 @@ namespace MyThreadPool
 
                 task();
             }
+
+            countOfActiveThreads--;
         }
 
         public MyTask<TResult> AddTask<TResult>(Func<TResult> newFunc)
@@ -62,5 +65,8 @@ namespace MyThreadPool
 
         public void Shutdown()
             => cts.Cancel();
+
+        public int GetCountOfActiveThreads()
+            => countOfActiveThreads;
     }
 }

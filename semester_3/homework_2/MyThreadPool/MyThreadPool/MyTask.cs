@@ -7,20 +7,12 @@ namespace MyThreadPool
     {
         public bool IsCompleted { get; private set; } = false;
 
-        public string ThreadName { get; set; }
-
         public TResult Result
         {
             get
             {
-                if (!IsCompleted)
-                {
-                    Thread.CurrentThread.Join();
-                }
-
                 while (!IsCompleted)
                 {
-                    Thread.Sleep(10);
                 }
 
                 if (outerException != null)
@@ -57,7 +49,6 @@ namespace MyThreadPool
                 outerException = exception;
             }
 
-            ThreadName = Thread.CurrentThread.Name;
             IsCompleted = true;
         }
     }
