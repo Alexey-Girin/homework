@@ -65,7 +65,7 @@ namespace MyThreadPool.Tests
             var threadPool = new MyThreadPool(numOfThreads);
 
             int variable = 2;
-            Func<int> func = new Func<int>(() => { return variable / 0; });
+            var func = new Func<int>(() => { return variable / 0; });
 
             var result = threadPool.AddTask(func).Result;
             threadPool.Shutdown();
@@ -78,7 +78,7 @@ namespace MyThreadPool.Tests
             var threadPool = new MyThreadPool(numOfThreads);
 
             int variable = 1;
-            Func<int> firstFunc = new Func<int>(() => { return variable + variable; });
+            var firstFunc = new Func<int>(() => { return variable + variable; });
 
             double func(int var) => Math.Sqrt(var);
             Func<int, double> secondFunc = func;
@@ -88,6 +88,26 @@ namespace MyThreadPool.Tests
 
             double trueResult = Math.Sqrt(variable + variable);
             Assert.AreEqual(secondTask.Result, trueResult);
+        }
+
+        [TestMethod]
+        public void MyThreadPoolShouldWorkWithDifferentTypes()
+        {
+            const int numOfThreads = 4;
+            var threadPool = new MyThreadPool(numOfThreads);
+
+            int firstVariable = 1;
+            var firstFunc = new Func<int>(() => { return firstVariable + firstVariable; });
+            var firstTask = threadPool.AddTask(firstFunc);
+
+            string secondVariable = "1";
+            var secondFunc = new Func<string>(() => { return secondVariable + secondVariable; });
+            var secondTask = threadPool.AddTask(secondFunc);
+
+            const int firstTrueResult = 2;
+            const string secondTrueResult = "11";
+            Assert.AreEqual(firstTask.Result, firstTrueResult);
+            Assert.AreEqual(secondTask.Result, secondTrueResult);
         }
     }
 }
