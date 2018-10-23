@@ -1,27 +1,58 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net.Sockets;
 
 namespace SimpleFTP_Client
 {
     public class ReplyDataList
     {
-        public string[] FileNames { get; private set; }
-        public int Size { get; private set; }
+        public int Size { get; }
 
-        public ReplyDataList(string[] newFilesName)
+        private readonly string[] fileNames;
+
+        public string[] FileNames
         {
-            FileNames = newFilesName;
+            get
+            {
+                if (Size != -1)
+                {
+                    return fileNames;
+                }
+
+                throw new Exception("ошибка. директория не существует");
+            }
+        }
+
+        public ReplyDataList(string[] filesName)
+        {
+            fileNames = filesName;
             Size = FileNames.Length;
         }
     }
 
     public class ReplyDataGet
     {
-        public byte[] Сontent { get; private set; }
+        public long Size { get; }
 
-        public ReplyDataGet(byte[] newContent)
+        private readonly byte[] fileContent;
+
+        public byte[] Сontent
         {
-            Сontent = newContent;
+            get
+            {
+                if (Size != -1)
+                {
+                    return fileContent;
+                }
+
+                throw new Exception("ошибка. файл не существует");
+            }
+        }
+
+        public ReplyDataGet(byte[] content, long size)
+        {
+            Size = size;
+            fileContent = content;
         }
     }
 
@@ -43,23 +74,37 @@ namespace SimpleFTP_Client
 
         public ReplyDataList List(string path)
         {
+            const int request = 1;
+
             client = new TcpClient(HostName, HostPort);
 
-            string request = '1' + path;
-
-            streamWriter = new StreamWriter(client.GetStream());
+            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
             streamReader = new StreamReader(client.GetStream());
 
-            streamWriter.WriteLine(request);
-            streamWriter.Flush();
+            streamWriter.Write(request);
+            streamWriter.WriteLine(path);
 
-            int size = int.Parse(streamReader.ReadLine());
+            int size = -1;
 
-            string[] FileNames = new string[size];
-
-            for (int i = 0; i < size; i++)
+            try
             {
-                FileNames[i]= streamReader.ReadLine();
+                size = int.Parse(streamReader.ReadLine());
+            }
+            catch (ArgumentNullException)
+            {
+                throw new Exception("ошибка исполнения запроса сервером");
+            }
+
+            string[] FileNames = null;
+
+            if (size != -1)
+            {
+                FileNames = new string[size];
+
+                for (int i = 0; i < size; i++)
+                {
+                    FileNames[i] = streamReader.ReadLine();
+                }
             }
 
             client.Close();
@@ -69,24 +114,38 @@ namespace SimpleFTP_Client
 
         public ReplyDataGet Get(string path)
         {
+            const int request = 2;
+
             client = new TcpClient(HostName, HostPort);
 
-            string request = '2' + path;
-
-            streamWriter = new StreamWriter(client.GetStream());
+            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
             streamReader = new StreamReader(client.GetStream());
 
-            streamWriter.WriteLine(request);
-            streamWriter.Flush();
+            streamWriter.Write(request);
+            streamWriter.WriteLine(path);
 
-            long size = long.Parse(streamReader.ReadLine());
-            byte[] fileContent = new byte[size];
+            long size = -1;
 
-            client.GetStream().Read(fileContent, 0, fileContent.Length);
+            try
+            {
+                size = long.Parse(streamReader.ReadLine());
+            }
+            catch (ArgumentNullException)
+            {
+                throw new Exception("ошибка исполнения запроса сервером");
+            }
+
+            byte[] fileContent = null;
+
+            if (size != -1)
+            {
+                fileContent = new byte[size];
+                client.GetStream().Read(fileContent, 0, fileContent.Length);
+            }
 
             client.Close();
 
-            return new ReplyDataGet(fileContent);
+            return new ReplyDataGet(fileContent, size);
         }
     }
 }

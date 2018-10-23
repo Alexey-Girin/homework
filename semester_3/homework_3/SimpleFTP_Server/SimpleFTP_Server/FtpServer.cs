@@ -8,17 +8,22 @@ namespace SimpleFTP_Server
 {
     public class FtpServer
     {
-        private IPAddress ip = IPAddress.Parse("127.0.0.1");
-        private int port = 8888;
+        public IPAddress Ip { get; } = IPAddress.Parse("127.0.0.1");
+        public int Port { get; }
 
         private TcpListener server;
 
-        public FtpServer() => server = new TcpListener(ip, port);
+        public FtpServer(int portName)
+        {
+            Port = portName;
+            server = new TcpListener(Ip, Port);
+        }
 
         public void Start()
         {
             server.Start();
-            Console.WriteLine("Слушаю...\n");
+
+            Console.WriteLine("Ожидание подключения...\n");
 
             while (true)
             {
@@ -34,49 +39,132 @@ namespace SimpleFTP_Server
 
             Console.WriteLine($"{clientIp} :новое подключение");
 
-            var reader = new StreamReader(client.GetStream());
+            StreamReader reader = new StreamReader(client.GetStream());
 
-            string request = reader.ReadLine();
-            string path = request.Substring(2);
+            char request = (char)reader.Read();
 
-            if (request[0] == '1')
+            if (request != '1' && request != '2')
+            {
+                Console.WriteLine($"{clientIp} :некорректный запрос. клиент отключен\n");
+                client.Close();
+                return;
+            }
+
+            string path = reader.ReadLine();
+
+            bool isSuccessfulExecution = true;
+
+            if (request == '1')
             {
                 Console.WriteLine($"{clientIp} :исполнение запроса на листинг фалов в {path}");
-                ListRequestExecution(client.GetStream(), path);
+                isSuccessfulExecution = ListRequestExecution(client.GetStream(), path, clientIp);
             }
-
-            if (request[0] == '2')
+            else 
             {
                 Console.WriteLine($"{clientIp} :исполнение запроса на получение файла: {path}");
-                GetRequestExecution(client.GetStream(), path);
+                isSuccessfulExecution = GetRequestExecution(client.GetStream(), path, clientIp);
             }
 
-            Console.WriteLine($"{clientIp} :запрос исполнен\n");
             client.Close();
+
+            if (isSuccessfulExecution)
+            {
+                Console.WriteLine($"{clientIp} :запрос исполнен. клиент отключен\n");
+            }
         }
 
-        private void ListRequestExecution(NetworkStream stream, string path)
+        private bool ListRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
         {
             StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
 
-            string[] fileNames = Directory.GetDirectories(path);
+            string[] fileNames = null;
+
+            try
+            {
+                fileNames = Directory.GetDirectories(path);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine($"{clientIp} :директория не найдена. клиент отключен\n");
+                writer.WriteLine(-1);
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine($"{clientIp} :запрет доступа. клиент отключен\n");
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                Console.WriteLine($"{clientIp} :путь слишком длинный. клиент отключен\n");
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                Console.WriteLine($"{clientIp} :путь имеет недопустимую форму. клиент отключен\n");
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                Console.WriteLine($"{clientIp} :формат пути не поддерживается. клиент отключен\n");
+                return false;
+            }
+
             writer.WriteLine(fileNames.Length);
 
             foreach (var fileName in fileNames)
             {
                 writer.WriteLine(fileName);
             }
+
+            return true;
         }
 
-        private void GetRequestExecution(NetworkStream stream, string path)
+        private bool GetRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
         {
             StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
 
-            using (FileStream fileStream = File.OpenRead(path))
+            try
             {
-                writer.WriteLine(fileStream.Length);
-                fileStream.CopyTo(stream);
+                using (FileStream fileStream = File.OpenRead(path))
+                {
+                    writer.WriteLine(fileStream.Length);
+                    fileStream.CopyTo(stream);
+                }
             }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine($"{clientIp} :директория не найдена. клиент отключен\n");
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine($"{clientIp} :запрет доступа. клиент отключен\n");
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                Console.WriteLine($"{clientIp} :путь слишком длинный. клиент отключен\n");
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                Console.WriteLine($"{clientIp} :путь имеет недопустимую форму. клиент отключен\n");
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                Console.WriteLine($"{clientIp} :формат пути не поддерживается. клиент отключен\n");
+                return false;
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine($"{clientIp} :файл не найден. клиент отключен\n");
+                writer.WriteLine(-1);
+                return false;
+            }
+
+            return true;
         }
     }
 }
