@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Threading;
 
 namespace SimpleFTP_Server
 {
@@ -11,44 +12,70 @@ namespace SimpleFTP_Server
         private int port = 8888;
 
         private TcpListener server;
-        private TcpClient client;
 
-        private NetworkStream stream;
-        private StreamReader streamReader;
-        private StreamWriter streamWriter;
-
-        public FtpServer()
-        {
-            server = new TcpListener(ip, port);
-        }
+        public FtpServer() => server = new TcpListener(ip, port);
 
         public void Start()
         {
             server.Start();
-            Console.WriteLine("Слушаю...");
+            Console.WriteLine("Слушаю...\n");
 
             while (true)
             {
-                client = server.AcceptTcpClient();
-                stream = client.GetStream();
+                var client = server.AcceptTcpClient();
+                ThreadPool.QueueUserWorkItem(ProcessingRequest, client);
+            }
+        }
 
-                Console.WriteLine("Новое подключение");
+        private void ProcessingRequest(object сlientObject)
+        {
+            TcpClient client = (TcpClient)сlientObject;
+            IPAddress clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
 
-                streamReader = new StreamReader(stream);
-                streamWriter = new StreamWriter(stream)
-                {
-                    AutoFlush = true
-                };
+            Console.WriteLine($"{clientIp} :новое подключение");
 
-                string path = streamReader.ReadLine();
-                string[] filesList = Directory.GetDirectories(path);
+            var reader = new StreamReader(client.GetStream());
 
-                streamWriter.WriteLine(filesList.Length);
+            string request = reader.ReadLine();
+            string path = request.Substring(2);
 
-                for (int i = 0; i < filesList.Length; i++)
-                {
-                    streamWriter.WriteLine(filesList[i]);
-                }
+            if (request[0] == '1')
+            {
+                Console.WriteLine($"{clientIp} :исполнение запроса на листинг фалов в {path}");
+                ListRequestExecution(client.GetStream(), path);
+            }
+
+            if (request[0] == '2')
+            {
+                Console.WriteLine($"{clientIp} :исполнение запроса на получение файла: {path}");
+                GetRequestExecution(client.GetStream(), path);
+            }
+
+            Console.WriteLine($"{clientIp} :запрос исполнен\n");
+            client.Close();
+        }
+
+        private void ListRequestExecution(NetworkStream stream, string path)
+        {
+            StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
+
+            string[] fileNames = Directory.GetDirectories(path);
+            writer.WriteLine(fileNames.Length);
+
+            foreach (var fileName in fileNames)
+            {
+                writer.WriteLine(fileName);
+            }
+        }
+
+        private void GetRequestExecution(NetworkStream stream, string path)
+        {
+            StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
+
+            using (FileStream fileStream = File.OpenRead(path))
+            {
+                writer.WriteLine(fileStream.Length);
+                fileStream.CopyTo(stream);
             }
         }
     }
