@@ -11,11 +11,11 @@ namespace SimpleFTP_Client
     {
         private TcpClient client;
 
-        private StreamWriter streamWriter;
-        private StreamReader streamReader;
+        public string HostName { get; }
+        public int HostPort { get; }
 
-        public string HostName { get; private set; }
-        public int HostPort { get; private set; }
+        private StreamReader streamReader;
+        private StreamWriter streamWriter;
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpClient"/>.
@@ -28,19 +28,38 @@ namespace SimpleFTP_Client
             HostPort = port;
         }
 
+        private bool Connect()
+        {
+            try
+            {
+                client = new TcpClient(HostName, HostPort);
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+
+            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            streamReader = new StreamReader(client.GetStream());
+
+            return true;
+        }
+
+        public void Disconnect() => client.Close();
+
         /// <summary>
-        /// Листинг файлов в директории на сервере.
+        /// Запрос на листинг файлов в директории на сервере.
         /// </summary>
-        /// <param name="path">Путь к директории.</param>
+        /// <param name="path">Путь к директории на сервере.</param>
         /// <returns>Список файлов в директории на сервере.</returns>
         public string[] List(string path)
         {
             const int request = 1;
 
-            client = new TcpClient(HostName, HostPort);
-
-            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
-            streamReader = new StreamReader(client.GetStream());
+            if(!Connect())
+            {
+                throw new Exception("ошибка подключения");
+            }
 
             streamWriter.Write(request);
             streamWriter.WriteLine(path);
@@ -53,13 +72,13 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
-                client.Close();
+                Disconnect();
                 throw new Exception("ошибка исполнения запроса сервером");
             }
 
             if (size == -1)
             {
-                client.Close();
+                Disconnect();
                 throw new Exception("ошибка. директория не существует");
             }
 
@@ -70,23 +89,23 @@ namespace SimpleFTP_Client
                 fileNames[i] = streamReader.ReadLine();
             }
 
-            client.Close();
+            Disconnect();
             return fileNames;
         }
 
         /// <summary>
-        /// Получение файла с сервера
+        /// Запрос на скачивание файла с сервера.
         /// </summary>
-        /// <param name="path">Путь к файлу.</param>
-        /// <returns>Данные файла.</returns>
-        public byte[] Get(string path)
+        /// <param name="path">Путь к файлу на сервере.</param>
+        /// <param name="pathToSave">Путь к месту скачивания файла.</param>
+        public void Get(string path, string pathToDownload)
         {
             const int request = 2;
 
-            client = new TcpClient(HostName, HostPort);
-
-            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
-            streamReader = new StreamReader(client.GetStream());
+            if (!Connect())
+            {
+                throw new Exception("ошибка подключения");
+            }
 
             streamWriter.Write(request);
             streamWriter.WriteLine(path);
@@ -99,21 +118,50 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
-                client.Close();
+                Disconnect();
                 throw new Exception("ошибка исполнения запроса сервером");
             }
 
             if (size == -1)
             {
-                client.Close();
+                Disconnect();
                 throw new Exception("ошибка. файл не существует");
             }
 
-            byte[] fileContent = new byte[size];
-            client.GetStream().Read(fileContent, 0, fileContent.Length);
+            try
+            {
+                DownloadFile(pathToDownload);
+            }
+            catch(Exception exception)
+            {
+                Disconnect();
+                throw new Exception($"ошибка скачивания файла: {exception.Message}");
+            }
+            
+            Disconnect();
+        }
 
-            client.Close();
-            return fileContent;
+        /// <summary>
+        /// Скачивание файла.
+        /// </summary>
+        /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
+        private void DownloadFile(string pathToDownload)
+        {
+            FileStream fileStream = null;
+
+            try
+            {
+                fileStream = File.OpenWrite(pathToDownload);
+            }
+            catch(Exception exception)
+            {
+                throw new Exception(exception.Message);
+            }
+
+            client.GetStream().CopyTo(fileStream);
+            fileStream.Flush();
+
+            fileStream.Close();
         }
     }
 }

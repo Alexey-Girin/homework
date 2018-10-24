@@ -14,7 +14,7 @@ namespace SimpleFTP_Server
         /// <summary>
         /// IP-адрес для прослушивания входящих подключений.
         /// </summary>
-        public IPAddress Ip { get; } = IPAddress.Parse("127.0.0.1");
+        public IPAddress Ip { get; } = IPAddress.Any;
 
         /// <summary>
         /// Порт для прослушивания входящих подключений.
