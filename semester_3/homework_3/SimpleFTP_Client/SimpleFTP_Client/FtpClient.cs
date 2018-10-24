@@ -4,58 +4,9 @@ using System.Net.Sockets;
 
 namespace SimpleFTP_Client
 {
-    public class ReplyDataList
-    {
-        public int Size { get; }
-
-        private readonly string[] fileNames;
-
-        public string[] FileNames
-        {
-            get
-            {
-                if (Size != -1)
-                {
-                    return fileNames;
-                }
-
-                throw new Exception("ошибка. директория не существует");
-            }
-        }
-
-        public ReplyDataList(string[] filesName)
-        {
-            fileNames = filesName;
-            Size = FileNames.Length;
-        }
-    }
-
-    public class ReplyDataGet
-    {
-        public long Size { get; }
-
-        private readonly byte[] fileContent;
-
-        public byte[] Сontent
-        {
-            get
-            {
-                if (Size != -1)
-                {
-                    return fileContent;
-                }
-
-                throw new Exception("ошибка. файл не существует");
-            }
-        }
-
-        public ReplyDataGet(byte[] content, long size)
-        {
-            Size = size;
-            fileContent = content;
-        }
-    }
-
+    /// <summary>
+    /// FTP-клиент.
+    /// </summary>
     public class FtpClient
     {
         private TcpClient client;
@@ -66,13 +17,23 @@ namespace SimpleFTP_Client
         public string HostName { get; private set; }
         public int HostPort { get; private set; }
 
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="FtpClient"/>.
+        /// </summary>
+        /// <param name="host">Адрес, прослушиваемый сервером.</param>
+        /// <param name="port">Порт, прослушиваемый сервером.</param>
         public FtpClient(string host, int port)
         {
             HostName = host;
             HostPort = port;
         }
 
-        public ReplyDataList List(string path)
+        /// <summary>
+        /// Листинг файлов в директории на сервере.
+        /// </summary>
+        /// <param name="path">Путь к директории.</param>
+        /// <returns>Список файлов в директории на сервере.</returns>
+        public string[] List(string path)
         {
             const int request = 1;
 
@@ -92,27 +53,33 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
+                client.Close();
                 throw new Exception("ошибка исполнения запроса сервером");
             }
 
-            string[] FileNames = null;
-
-            if (size != -1)
+            if (size == -1)
             {
-                FileNames = new string[size];
+                client.Close();
+                throw new Exception("ошибка. директория не существует");
+            }
 
-                for (int i = 0; i < size; i++)
-                {
-                    FileNames[i] = streamReader.ReadLine();
-                }
+            string[] fileNames = new string[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                fileNames[i] = streamReader.ReadLine();
             }
 
             client.Close();
-
-            return new ReplyDataList(FileNames);
+            return fileNames;
         }
 
-        public ReplyDataGet Get(string path)
+        /// <summary>
+        /// Получение файла с сервера
+        /// </summary>
+        /// <param name="path">Путь к файлу.</param>
+        /// <returns>Данные файла.</returns>
+        public byte[] Get(string path)
         {
             const int request = 2;
 
@@ -132,20 +99,21 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
+                client.Close();
                 throw new Exception("ошибка исполнения запроса сервером");
             }
 
-            byte[] fileContent = null;
-
-            if (size != -1)
+            if (size == -1)
             {
-                fileContent = new byte[size];
-                client.GetStream().Read(fileContent, 0, fileContent.Length);
+                client.Close();
+                throw new Exception("ошибка. файл не существует");
             }
 
-            client.Close();
+            byte[] fileContent = new byte[size];
+            client.GetStream().Read(fileContent, 0, fileContent.Length);
 
-            return new ReplyDataGet(fileContent, size);
+            client.Close();
+            return fileContent;
         }
     }
 }

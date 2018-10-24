@@ -6,32 +6,56 @@ using System.Threading;
 
 namespace SimpleFTP_Server
 {
+    /// <summary>
+    /// FTP-сервер.
+    /// </summary>
     public class FtpServer
     {
+        /// <summary>
+        /// IP-адрес для прослушивания входящих подключений.
+        /// </summary>
         public IPAddress Ip { get; } = IPAddress.Parse("127.0.0.1");
+
+        /// <summary>
+        /// Порт для прослушивания входящих подключений.
+        /// </summary>
         public int Port { get; }
 
-        private TcpListener server;
+        /// <summary>
+        /// Объект, прослушивающий входящие подключения.
+        /// </summary>
+        private TcpListener listener;
 
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="FtpServer"/>.
+        /// </summary>
+        /// <param name="portName">Порт для прослушивания входящих подключений.</param>
         public FtpServer(int portName)
         {
             Port = portName;
-            server = new TcpListener(Ip, Port);
+            listener = new TcpListener(Ip, Port);
         }
 
+        /// <summary>
+        /// Метод, запускающий сервер.
+        /// </summary>
         public void Start()
         {
-            server.Start();
+            listener.Start();
 
-            Console.WriteLine("Ожидание подключения...\n");
+            Console.WriteLine("Ожидание подключений...\n");
 
             while (true)
             {
-                var client = server.AcceptTcpClient();
+                var client = listener.AcceptTcpClient();
                 ThreadPool.QueueUserWorkItem(ProcessingRequest, client);
             }
         }
 
+        /// <summary>
+        /// Метод, обрабатывающий запрос клиента.
+        /// </summary>
+        /// <param name="сlientObject">Подключенный клиент.</param>
         private void ProcessingRequest(object сlientObject)
         {
             TcpClient client = (TcpClient)сlientObject;
@@ -73,6 +97,13 @@ namespace SimpleFTP_Server
             }
         }
 
+        /// <summary>
+        /// Метод, исполняющий запрос клиента на листинг файлов в директории.
+        /// </summary>
+        /// <param name="stream">Поток, используемый для обмена данными с клиентом.</param>
+        /// <param name="path">Путь к директории.</param>
+        /// <param name="clientIp">IP-адрес клиента.</param>
+        /// <returns>True, если запрос исполнен успешно.</returns>
         private bool ListRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
         {
             StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
@@ -120,6 +151,13 @@ namespace SimpleFTP_Server
             return true;
         }
 
+        /// <summary>
+        /// Метод, исполняющий запрос клиента на получение файла.
+        /// </summary>
+        /// <param name="stream">Поток, используемый для обмена данными с клиентом.</param>
+        /// <param name="path">Путь к файлу.</param>
+        /// <param name="clientIp">IP-адрес клиента.</param>
+        /// <returns>True, если запрос исполнен успешно.</returns>
         private bool GetRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
         {
             StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
