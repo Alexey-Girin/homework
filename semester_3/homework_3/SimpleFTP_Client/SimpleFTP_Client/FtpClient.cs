@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Collections.Generic;
 
 namespace SimpleFTP_Client
 {
@@ -9,13 +10,57 @@ namespace SimpleFTP_Client
     /// </summary>
     public class FtpClient
     {
+        /// <summary>
+        /// TCP-клиент.
+        /// </summary>
         private TcpClient client;
 
+        /// <summary>
+        /// Адрес сервера.
+        /// </summary>
         public string HostName { get; }
+
+        /// <summary>
+        /// Порт, на котором сервер прослушивает подключения.
+        /// </summary>
         public int HostPort { get; }
 
+        /// <summary>
+        /// Объект, позволяющий считывать информацию из потока.
+        /// </summary>
         private StreamReader streamReader;
+
+        /// <summary>
+        /// Объект, позволяющий записывать информацию в поток.
+        /// </summary>
         private StreamWriter streamWriter;
+
+        /// <summary>
+        /// Структура, содержащая информацию о файле или директории.
+        /// </summary>
+        public struct FileStruct
+        {
+            /// <summary>
+            /// Имя файла или директории.
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// Флаг, принимающий значение True для директорий.
+            /// </summary>
+            public bool IsDirectory;
+
+            /// <summary>
+            /// Конструктор структуры.
+            /// </summary>
+            /// <param name="fileName">Имя файла или директории.</param>
+            /// <param name="isDir">Флаг, принимающий значение True для директорий.</param>
+            public FileStruct(string fileName, bool isDir)
+            {
+                Name = fileName;
+                IsDirectory = isDir;
+            }
+        }
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpClient"/>.
@@ -28,6 +73,10 @@ namespace SimpleFTP_Client
             HostPort = port;
         }
 
+        /// <summary>
+        /// Метод, устанавливающий соединений с сервером.
+        /// </summary>
+        /// <returns>True, если соединение установлено.</returns>
         private bool Connect()
         {
             try
@@ -45,17 +94,15 @@ namespace SimpleFTP_Client
             return true;
         }
 
-        public void Disconnect() => client.Close();
-
         /// <summary>
         /// Запрос на листинг файлов в директории на сервере.
         /// </summary>
         /// <param name="path">Путь к директории на сервере.</param>
-        /// <returns>Список файлов в директории на сервере.</returns>
-        public string[] List(string path)
+        /// <returns>Информация о файлах.</returns>
+        public List<FileStruct> List(string path)
         {
             const int request = 1;
-
+            
             if(!Connect())
             {
                 throw new Exception("ошибка подключения");
@@ -82,15 +129,18 @@ namespace SimpleFTP_Client
                 throw new Exception("ошибка. директория не существует");
             }
 
-            string[] fileNames = new string[size];
+            List<FileStruct> fileStructs = new List<FileStruct>();
 
             for (int i = 0; i < size; i++)
             {
-                fileNames[i] = streamReader.ReadLine();
+                string fileName = streamReader.ReadLine();
+                bool IsDir = "True" == streamReader.ReadLine();
+                fileStructs.Add(new FileStruct(fileName, IsDir));
+           
             }
 
             Disconnect();
-            return fileNames;
+            return fileStructs;
         }
 
         /// <summary>
@@ -163,5 +213,10 @@ namespace SimpleFTP_Client
 
             fileStream.Close();
         }
+
+        /// <summary>
+        /// Метод, разрывающий соединение с сервером.
+        /// </summary>
+        public void Disconnect() => client.Close();
     }
 }

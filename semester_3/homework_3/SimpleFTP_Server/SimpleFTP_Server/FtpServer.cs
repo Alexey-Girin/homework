@@ -59,150 +59,137 @@ namespace SimpleFTP_Server
         private void ProcessingRequest(object сlientObject)
         {
             TcpClient client = (TcpClient)сlientObject;
-            IPAddress clientIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+            IPAddress clientIp = GetIPAddress(client);
 
             Console.WriteLine($"{clientIp} :новое подключение");
 
             StreamReader reader = new StreamReader(client.GetStream());
 
             char request = (char)reader.Read();
-
-            if (request != '1' && request != '2')
-            {
-                Console.WriteLine($"{clientIp} :некорректный запрос. клиент отключен\n");
-                client.Close();
-                return;
-            }
-
             string path = reader.ReadLine();
-
-            bool isSuccessfulExecution = true;
 
             if (request == '1')
             {
                 Console.WriteLine($"{clientIp} :исполнение запроса на листинг фалов в {path}");
-                isSuccessfulExecution = ListRequestExecution(client.GetStream(), path, clientIp);
+                ListRequestExecution(client, path);
             }
-            else 
+            else if (request == '2')
             {
                 Console.WriteLine($"{clientIp} :исполнение запроса на получение файла: {path}");
-                isSuccessfulExecution = GetRequestExecution(client.GetStream(), path, clientIp);
+                GetRequestExecution(client, path);
             }
-
-            client.Close();
-
-            if (isSuccessfulExecution)
+            else
             {
-                Console.WriteLine($"{clientIp} :запрос исполнен. клиент отключен\n");
+                Console.WriteLine($"{clientIp} :некорректный запрос. клиент отключен\n");
+                Disconnect(client);
             }
         }
 
         /// <summary>
         /// Метод, исполняющий запрос клиента на листинг файлов в директории.
         /// </summary>
-        /// <param name="stream">Поток, используемый для обмена данными с клиентом.</param>
+        /// <param name="client">Подключенный клиент.</param>
         /// <param name="path">Путь к директории.</param>
-        /// <param name="clientIp">IP-адрес клиента.</param>
-        /// <returns>True, если запрос исполнен успешно.</returns>
-        private bool ListRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
+        private void ListRequestExecution(TcpClient client, string path)
         {
-            StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
+            StreamWriter writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            IPAddress clientIp = GetIPAddress(client);
 
-            string[] fileNames = null;
+            string[] directoryObjectNames = null;
 
             try
             {
-                fileNames = Directory.GetDirectories(path);
+                directoryObjectNames = GetDirectoryObjectNames(path);
             }
             catch (DirectoryNotFoundException)
             {
                 Console.WriteLine($"{clientIp} :директория не найдена. клиент отключен\n");
                 writer.WriteLine(-1);
-                return false;
+
+                Disconnect(client);
+                return;
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception exception)
             {
-                Console.WriteLine($"{clientIp} :запрет доступа. клиент отключен\n");
-                return false;
-            }
-            catch (PathTooLongException)
-            {
-                Console.WriteLine($"{clientIp} :путь слишком длинный. клиент отключен\n");
-                return false;
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"{clientIp} :путь имеет недопустимую форму. клиент отключен\n");
-                return false;
-            }
-            catch (NotSupportedException)
-            {
-                Console.WriteLine($"{clientIp} :формат пути не поддерживается. клиент отключен\n");
-                return false;
+                Console.WriteLine($"{clientIp} :ошибка, клиент отключен - {exception.Message}\n");
+
+                Disconnect(client);
+                return;
             }
 
-            writer.WriteLine(fileNames.Length);
+            writer.WriteLine(directoryObjectNames.Length);
 
-            foreach (var fileName in fileNames)
+            foreach (var fileName in directoryObjectNames)
             {
                 writer.WriteLine(fileName);
+                writer.WriteLine(Directory.Exists(fileName));
             }
 
-            return true;
+            Console.WriteLine($"{clientIp} :запрос исполнен. клиент отключен\n");
+            Disconnect(client);
         }
 
         /// <summary>
         /// Метод, исполняющий запрос клиента на получение файла.
         /// </summary>
-        /// <param name="stream">Поток, используемый для обмена данными с клиентом.</param>
+        /// <param name="client">Подключенный клиент.</param>
         /// <param name="path">Путь к файлу.</param>
-        /// <param name="clientIp">IP-адрес клиента.</param>
-        /// <returns>True, если запрос исполнен успешно.</returns>
-        private bool GetRequestExecution(NetworkStream stream, string path, IPAddress clientIp)
+        private void GetRequestExecution(TcpClient client, string path)
         {
-            StreamWriter writer = new StreamWriter(stream) { AutoFlush = true };
+            StreamWriter writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            IPAddress clientIp = GetIPAddress(client);
 
             try
             {
                 using (FileStream fileStream = File.OpenRead(path))
                 {
                     writer.WriteLine(fileStream.Length);
-                    fileStream.CopyTo(stream);
+                    fileStream.CopyTo(client.GetStream());
                 }
-            }
-            catch (DirectoryNotFoundException)
-            {
-                Console.WriteLine($"{clientIp} :директория не найдена. клиент отключен\n");
-                return false;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Console.WriteLine($"{clientIp} :запрет доступа. клиент отключен\n");
-                return false;
-            }
-            catch (PathTooLongException)
-            {
-                Console.WriteLine($"{clientIp} :путь слишком длинный. клиент отключен\n");
-                return false;
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"{clientIp} :путь имеет недопустимую форму. клиент отключен\n");
-                return false;
-            }
-            catch (NotSupportedException)
-            {
-                Console.WriteLine($"{clientIp} :формат пути не поддерживается. клиент отключен\n");
-                return false;
             }
             catch (FileNotFoundException)
             {
                 Console.WriteLine($"{clientIp} :файл не найден. клиент отключен\n");
                 writer.WriteLine(-1);
-                return false;
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"{clientIp} :ошибка, клиент отключен - {exception.Message}\n");
             }
 
-            return true;
+            Disconnect(client);
         }
+
+        /// <summary>
+        /// Метод, возвращающий список подкаталогов и файлов в директории.
+        /// </summary>
+        /// <param name="path">Путь к директории.</param>
+        /// <returns>Список подкаталогов и файлов в директории.</returns>
+        private string[] GetDirectoryObjectNames(string path)
+        {
+            string[] subdirectoryNames = Directory.GetDirectories(path);
+            string[] fileNames = Directory.GetFiles(path);
+
+            string[] directoryObjectNames = new string[subdirectoryNames.Length + fileNames.Length];
+
+            subdirectoryNames.CopyTo(directoryObjectNames, 0);
+            fileNames.CopyTo(directoryObjectNames, subdirectoryNames.Length);
+
+            return directoryObjectNames;
+        }
+
+        /// <summary>
+        /// Метод, получающий IP-адрес клиента.
+        /// </summary>
+        /// <param name="client">Подключенный клиент.</param>
+        /// <returns>IP-адрес клиента.</returns>
+        private IPAddress GetIPAddress(TcpClient client)
+            => ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+
+        /// <summary>
+        /// Метод, завершающий соединений с клиентом.
+        /// </summary>
+        /// <param name="client">Подключенный клиент.</param>
+        private void Disconnect(TcpClient client) => client.Close();
     }
 }
