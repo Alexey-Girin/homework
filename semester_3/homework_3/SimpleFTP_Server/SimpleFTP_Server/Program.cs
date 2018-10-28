@@ -6,6 +6,10 @@
         {
             FtpServer server = new FtpServer(8888);
             server.Start();
+            System.Threading.Thread.Sleep(100);
+            server.Stop();
+     
+            System.Console.ReadKey();
         }
     }
 }

@@ -36,33 +36,6 @@ namespace SimpleFTP_Client
         private StreamWriter streamWriter;
 
         /// <summary>
-        /// Структура, содержащая информацию о файле или директории.
-        /// </summary>
-        public struct FileStruct
-        {
-            /// <summary>
-            /// Имя файла или директории.
-            /// </summary>
-            public string Name;
-
-            /// <summary>
-            /// Флаг, принимающий значение True для директорий.
-            /// </summary>
-            public bool IsDirectory;
-
-            /// <summary>
-            /// Конструктор структуры.
-            /// </summary>
-            /// <param name="fileName">Имя файла или директории.</param>
-            /// <param name="isDir">Флаг, принимающий значение True для директорий.</param>
-            public FileStruct(string fileName, bool isDir)
-            {
-                Name = fileName;
-                IsDirectory = isDir;
-            }
-        }
-
-        /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpClient"/>.
         /// </summary>
         /// <param name="host">Адрес, прослушиваемый сервером.</param>
@@ -74,7 +47,7 @@ namespace SimpleFTP_Client
         }
 
         /// <summary>
-        /// Метод, устанавливающий соединений с сервером.
+        /// Метод, устанавливающий соединение с сервером.
         /// </summary>
         /// <returns>True, если соединение установлено.</returns>
         private bool Connect()
@@ -99,7 +72,7 @@ namespace SimpleFTP_Client
         /// </summary>
         /// <param name="path">Путь к директории на сервере.</param>
         /// <returns>Информация о файлах.</returns>
-        public List<FileStruct> List(string path)
+        public List<FileInf> List(string path)
         {
             const int request = 1;
             
@@ -126,20 +99,21 @@ namespace SimpleFTP_Client
             if (size == -1)
             {
                 Disconnect();
-                throw new Exception("ошибка. директория не существует");
+                throw new Exception("ошибка. директории не существует");
             }
 
-            List<FileStruct> fileStructs = new List<FileStruct>();
+            List<FileInf> fileStructs = new List<FileInf>();
 
             for (int i = 0; i < size; i++)
             {
                 string fileName = streamReader.ReadLine();
                 bool IsDir = "True" == streamReader.ReadLine();
-                fileStructs.Add(new FileStruct(fileName, IsDir));
-           
+                fileStructs.Add(new FileInf(fileName, IsDir));    
             }
 
             Disconnect();
+
+            fileStructs.Sort();
             return fileStructs;
         }
 
@@ -175,7 +149,7 @@ namespace SimpleFTP_Client
             if (size == -1)
             {
                 Disconnect();
-                throw new Exception("ошибка. файл не существует");
+                throw new Exception("ошибка. файла не существует");
             }
 
             try
