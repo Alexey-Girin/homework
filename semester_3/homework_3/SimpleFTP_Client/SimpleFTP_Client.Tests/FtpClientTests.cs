@@ -2,6 +2,7 @@
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimpleFTP_Server;
+using SimpleFTP_Client.Exceptions;
 
 namespace SimpleFTP_Client.Tests
 {
@@ -9,33 +10,19 @@ namespace SimpleFTP_Client.Tests
     public class FtpClientTests
     {
         [TestMethod]
-        public void IfServerOffClientShouldNotCrash()
+        [ExpectedException(typeof(ConnectException))]
+        public void IfServerOffClientShouldNotCrash_List()
         {
             var client = new FtpClient("localhost", 8888);
+            client.List(Directory.GetCurrentDirectory());
+        }
 
-            string path = Directory.GetCurrentDirectory();
-            string firstExceptionMessage = null;
-            string secondExceptionMessage = null;
-
-            try
-            {
-                client.List(path);
-            }
-            catch (Exception exception)
-            {
-                firstExceptionMessage = exception.Message;
-            }
-
-            try
-            {
-                client.Get(path, path);
-            }
-            catch (Exception exception)
-            {
-                secondExceptionMessage = exception.Message;
-            }
-
-            Assert.AreEqual(firstExceptionMessage, secondExceptionMessage, "ошибка подключения");
+        [TestMethod]
+        [ExpectedException(typeof(ConnectException))]
+        public void IfServerOffClientShouldNotCrash_Get()
+        {
+            var client = new FtpClient("localhost", 8888);
+            client.Get(Directory.GetCurrentDirectory(), "");
         }
 
         [TestMethod]
@@ -43,7 +30,7 @@ namespace SimpleFTP_Client.Tests
         {
             Directory.CreateDirectory(Directory.GetCurrentDirectory() +
                 @"\TestData\directory_1");
-            Directory.CreateDirectory(Directory.GetCurrentDirectory() + 
+            Directory.CreateDirectory(Directory.GetCurrentDirectory() +
                 @"\TestData\directory_2");
             File.Create(Directory.GetCurrentDirectory() + @"\TestData\EmptyFile_1.txt");
             File.Create(Directory.GetCurrentDirectory() + @"\TestData\EmptyFile_2.txt");
@@ -52,7 +39,7 @@ namespace SimpleFTP_Client.Tests
 
             string[] fileNames = Directory.GetFiles(path);
             string[] subdirectoryNames = Directory.GetDirectories(path);
-            string[] directoryObjectNames = 
+            string[] directoryObjectNames =
                 new string[fileNames.Length + subdirectoryNames.Length];
 
             fileNames.CopyTo(directoryObjectNames, 0);
@@ -61,7 +48,7 @@ namespace SimpleFTP_Client.Tests
             Array.Sort(directoryObjectNames);
 
             var client = new FtpClient("localhost", 8888);
-            var server = new FtpServer(8888);
+            var server = new FtpServer(8888, 100);
 
             server.Start();
             var fileStructs = client.List(path);
@@ -92,13 +79,11 @@ namespace SimpleFTP_Client.Tests
 
             File.Delete(Directory.GetCurrentDirectory() + @"\TestData\GetResult.txt");
 
-            string path = Directory.GetCurrentDirectory() + 
-                @"\TestData\GetTestData.txt";
-            string resultPath = Directory.GetCurrentDirectory() + 
-                @"\TestData\GetResult.txt";
+            string path = Directory.GetCurrentDirectory() + @"\TestData\GetTestData.txt";
+            string resultPath = Directory.GetCurrentDirectory() + @"\TestData\GetResult.txt";
 
             var client = new FtpClient("localhost", 8888);
-            var server = new FtpServer(8888);
+            var server = new FtpServer(8888, 100);
 
             server.Start();
             client.Get(path, resultPath);
@@ -129,84 +114,65 @@ namespace SimpleFTP_Client.Tests
         }
 
         [TestMethod]
-        public void ListShouldWorkWithIncorrectPath()
+        [ExpectedException(typeof(ServerErrorException))]
+        public void ListShouldWorkWithNullPath()
         {
             var client = new FtpClient("localhost", 8888);
-            var server = new FtpServer(8888);
-
-            string firstPath = Directory.GetCurrentDirectory() + @"\Teeest\";
-            string secondPath = null;
-
-            string firstExceptionMessage = null;
-            string secondExceptionMessage = null;
+            var server = new FtpServer(8888, 100);
 
             server.Start();
-
-            try
-            {
-                client.List(firstPath);
-            }
-            catch(Exception exception)
-            {
-                firstExceptionMessage = exception.Message;
-            }
-
-            try
-            {
-                client.List(secondPath);
-            }
-            catch (Exception exception)
-            {
-                secondExceptionMessage = exception.Message;
-            }
-
+            client.List(null);
             server.Stop();
-
-            Assert.AreEqual(firstExceptionMessage,
-                "ошибка. директории не существует");
-            Assert.AreEqual(secondExceptionMessage,
-               "ошибка исполнения запроса сервером");
         }
 
         [TestMethod]
-        public void GetShouldWorkWithIncorrectPath()
+        [ExpectedException(typeof(DirectoryNotExistException))]
+        public void ListShouldWorkWithIncorrectPath()
         {
-            File.Delete(Directory.GetCurrentDirectory() + @"\1.txt");
             var client = new FtpClient("localhost", 8888);
-            var server = new FtpServer(8888);
+            var server = new FtpServer(8888, 100);
 
-            string firstPath = Directory.GetCurrentDirectory() + @"\1.txt";
-            string secondPath = null;
+            string path = Directory.GetCurrentDirectory() + @"\ShouldBeDeleted";
 
-            string firstExceptionMessage = null;
-            string secondExceptionMessage = null;
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path);
+            }
 
             server.Start();
-
-            try
-            {
-                client.Get(firstPath, secondPath);
-            }
-            catch (Exception exception)
-            {
-                firstExceptionMessage = exception.Message;
-            }
-
-            try
-            {
-                client.Get(secondPath, firstPath);
-            }
-            catch (Exception exception)
-            {
-                secondExceptionMessage = exception.Message;
-            }
-
+            client.List(path);
             server.Stop();
+        }
 
-            Assert.AreEqual(firstExceptionMessage,
-                "ошибка. файла не существует");
-            Assert.AreEqual(secondExceptionMessage,
-               "ошибка исполнения запроса сервером");
+        [TestMethod]
+        [ExpectedException(typeof(ServerErrorException))]
+        public void GetShouldWorkWithNullPath()
+        {
+            var client = new FtpClient("localhost", 8888);
+            var server = new FtpServer(8888, 100);
+
+            server.Start();
+            client.Get(null, null);
+            server.Stop();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(FileNotExistException))]
+        public void GetShouldWorkWithIncorrectPath()
+        {
+            var client = new FtpClient("localhost", 8888);
+            var server = new FtpServer(8888, 100);
+
+            string path = Directory.GetCurrentDirectory() + @"\ShouldBeDeleted.txt";
+
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+
+            server.Start();
+            client.Get(path, path);
+            server.Stop();
         }
     }
 }

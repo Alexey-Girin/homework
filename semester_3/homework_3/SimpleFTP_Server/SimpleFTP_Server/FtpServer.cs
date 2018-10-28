@@ -31,16 +31,25 @@ namespace SimpleFTP_Server
         /// </summary>
         private volatile int countOfСonnectedСlients = 0;
 
-        private volatile bool isAbleToContinue = true;
+        /// <summary>
+        /// Максимально возможное количество входящих подключений.
+        /// </summary>
+        private readonly int maxCountOfСonnectedСlients;
+
+        /// <summary>
+        /// Объект, необходимый для завершения работы сервера.
+        /// </summary>
+        private CancellationTokenSource cts = new CancellationTokenSource();
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpServer"/>.
         /// </summary>
         /// <param name="portName">Порт для прослушивания входящих подключений.</param>
-        public FtpServer(int portName)
+        public FtpServer(int portName, int countOfClients)
         {
             Port = portName;
             listener = new TcpListener(Ip, Port);
+            maxCountOfСonnectedСlients = countOfClients;
         }
 
         /// <summary>
@@ -52,8 +61,14 @@ namespace SimpleFTP_Server
 
             Console.WriteLine("Ожидание подключений...\n");
 
-            while (isAbleToContinue)
+            while (!cts.IsCancellationRequested)
             {
+                if (countOfСonnectedСlients == maxCountOfСonnectedСlients)
+                {
+                    Thread.Sleep(1);
+                    continue;
+                }
+
                 TcpClient client = null;
 
                 try
@@ -68,10 +83,7 @@ namespace SimpleFTP_Server
                 ThreadPool.QueueUserWorkItem(ProcessingRequest, client);
             }
 
-            while (countOfСonnectedСlients != 0)
-            {
-                Thread.Sleep(1);
-            }
+            Shutdown();
         }
 
         /// <summary>
@@ -211,7 +223,7 @@ namespace SimpleFTP_Server
             => ((IPEndPoint)client.Client.RemoteEndPoint).Address;
 
         /// <summary>
-        /// Метод, завершающий соединений с клиентом.
+        /// Метод, завершающий соединение с клиентом.
         /// </summary>
         /// <param name="client">Подключенный клиент.</param>
         private void Disconnect(TcpClient client)
@@ -220,10 +232,23 @@ namespace SimpleFTP_Server
             countOfСonnectedСlients--;
         }
 
-        public void Stop()
+        /// <summary>
+        /// Метод, завершающий работу сервера после окончания 
+        /// исполнения запросов от подключенных клиентов.
+        /// </summary>
+        private void Shutdown()
         {
-            isAbleToContinue = false;
+            while (countOfСonnectedСlients != 0)
+            {
+                Thread.Sleep(1);
+            }
+
             listener.Stop();
         }
+
+        /// <summary>
+        /// Метод, останавливающий работу сервера.
+        /// </summary>
+        public void Stop() => cts.Cancel();
     }
 }

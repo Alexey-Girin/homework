@@ -18,7 +18,7 @@ namespace SimpleFTP_Client
         public bool IsDirectory { get; }
 
         /// <summary>
-        /// Конструктор структуры.
+        /// Конструктор экземпляра класса <see cref="FileInf"/>.
         /// </summary>
         /// <param name="fileName">Имя файла или директории.</param>
         /// <param name="isDir">Флаг, принимающий значение True для директорий.</param>

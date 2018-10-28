@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using SimpleFTP_Client.Exceptions;
 
 namespace SimpleFTP_Client
 {
@@ -78,7 +79,7 @@ namespace SimpleFTP_Client
             
             if(!Connect())
             {
-                throw new Exception("ошибка подключения");
+                throw new ConnectException();
             }
 
             streamWriter.Write(request);
@@ -93,13 +94,13 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 Disconnect();
-                throw new Exception("ошибка исполнения запроса сервером");
+                throw new ServerErrorException();
             }
 
             if (size == -1)
             {
                 Disconnect();
-                throw new Exception("ошибка. директории не существует");
+                throw new DirectoryNotExistException();
             }
 
             List<FileInf> fileStructs = new List<FileInf>();
@@ -128,7 +129,7 @@ namespace SimpleFTP_Client
 
             if (!Connect())
             {
-                throw new Exception("ошибка подключения");
+                throw new ConnectException();
             }
 
             streamWriter.Write(request);
@@ -143,13 +144,13 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 Disconnect();
-                throw new Exception("ошибка исполнения запроса сервером");
+                throw new ServerErrorException();
             }
 
             if (size == -1)
             {
                 Disconnect();
-                throw new Exception("ошибка. файла не существует");
+                throw new FileNotExistException();
             }
 
             try
