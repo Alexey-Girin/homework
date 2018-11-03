@@ -73,11 +73,11 @@ namespace SimpleFTP_Client
         /// </summary>
         /// <param name="path">Путь к директории на сервере.</param>
         /// <returns>Информация о файлах.</returns>
-        public List<FileInf> List(string path)
+        public List<FileInfo> List(string path)
         {
             const int request = 1;
-            
-            if(!Connect())
+
+            if (!Connect())
             {
                 throw new ConnectException();
             }
@@ -103,13 +103,13 @@ namespace SimpleFTP_Client
                 throw new DirectoryNotExistException();
             }
 
-            List<FileInf> fileStructs = new List<FileInf>();
+            var fileStructs = new List<FileInfo>();
 
             for (int i = 0; i < size; i++)
             {
                 string fileName = streamReader.ReadLine();
                 bool IsDir = "True" == streamReader.ReadLine();
-                fileStructs.Add(new FileInf(fileName, IsDir));    
+                fileStructs.Add(new FileInfo(fileName, IsDir));
             }
 
             Disconnect();
@@ -157,12 +157,11 @@ namespace SimpleFTP_Client
             {
                 DownloadFile(pathToDownload);
             }
-            catch(Exception exception)
+            catch (Exception)
             {
-                Disconnect();
-                throw new Exception($"ошибка скачивания файла: {exception.Message}");
+                throw;
             }
-            
+
             Disconnect();
         }
 
@@ -178,9 +177,9 @@ namespace SimpleFTP_Client
             {
                 fileStream = File.OpenWrite(pathToDownload);
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
-                throw new Exception(exception.Message);
+                throw new Exception("ошибка скачивания файла", exception);
             }
 
             client.GetStream().CopyTo(fileStream);

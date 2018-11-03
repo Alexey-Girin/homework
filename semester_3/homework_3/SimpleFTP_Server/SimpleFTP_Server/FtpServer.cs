@@ -42,9 +42,15 @@ namespace SimpleFTP_Server
         private CancellationTokenSource cts = new CancellationTokenSource();
 
         /// <summary>
+        /// Объект, принимающий сигнальное состояние после исполнения всех запросов от клиентов.
+        /// </summary>
+        private ManualResetEvent endOfRequestProcessing = new ManualResetEvent(true);
+
+        /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpServer"/>.
         /// </summary>
         /// <param name="portName">Порт для прослушивания входящих подключений.</param>
+        /// <param name="countOfClients">Максимально возможное количество входящих подключений.</param>
         public FtpServer(int portName, int countOfClients)
         {
             Port = portName;
@@ -63,12 +69,6 @@ namespace SimpleFTP_Server
 
             while (!cts.IsCancellationRequested)
             {
-                if (countOfСonnectedСlients == maxCountOfСonnectedСlients)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
-
                 TcpClient client = null;
 
                 try
@@ -80,6 +80,20 @@ namespace SimpleFTP_Server
                     break;
                 }
 
+                if (countOfСonnectedСlients == maxCountOfСonnectedСlients)
+                {
+                    Console.WriteLine($"{GetIPAddress(client)} :попытка подключения не удалась." +
+                        $"установлено максимально возможное количество входящих подключений.\n");
+                    client.Close();
+                    continue;
+                }
+
+                if (countOfСonnectedСlients == 0)
+                {
+                    endOfRequestProcessing.Reset();
+                }
+
+                countOfСonnectedСlients++;
                 ThreadPool.QueueUserWorkItem(ProcessingRequest, client);
             }
 
@@ -96,9 +110,8 @@ namespace SimpleFTP_Server
             IPAddress clientIp = GetIPAddress(client);
 
             Console.WriteLine($"{clientIp} :новое подключение");
-            countOfСonnectedСlients++;
 
-            StreamReader reader = new StreamReader(client.GetStream());
+            var reader = new StreamReader(client.GetStream());
 
             char request = (char)reader.Read();
             string path = reader.ReadLine();
@@ -127,7 +140,7 @@ namespace SimpleFTP_Server
         /// <param name="path">Путь к директории.</param>
         private void ListRequestExecution(TcpClient client, string path)
         {
-            StreamWriter writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            var writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
             IPAddress clientIp = GetIPAddress(client);
 
             string[] directoryObjectNames = null;
@@ -171,7 +184,7 @@ namespace SimpleFTP_Server
         /// <param name="path">Путь к файлу.</param>
         private void GetRequestExecution(TcpClient client, string path)
         {
-            StreamWriter writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            var writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
             IPAddress clientIp = GetIPAddress(client);
 
             try
@@ -230,6 +243,11 @@ namespace SimpleFTP_Server
         {
             client.Close();
             countOfСonnectedСlients--;
+
+            if (countOfСonnectedСlients == 0)
+            {
+                endOfRequestProcessing.Set();
+            }
         }
 
         /// <summary>
@@ -238,11 +256,7 @@ namespace SimpleFTP_Server
         /// </summary>
         private void Shutdown()
         {
-            while (countOfСonnectedСlients != 0)
-            {
-                Thread.Sleep(1);
-            }
-
+            endOfRequestProcessing.WaitOne();
             listener.Stop();
         }
 
