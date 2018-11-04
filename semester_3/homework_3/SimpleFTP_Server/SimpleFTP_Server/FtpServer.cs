@@ -47,6 +47,12 @@ namespace SimpleFTP_Server
         private ManualResetEvent endOfRequestProcessing = new ManualResetEvent(true);
 
         /// <summary>
+        /// Объект, необходимый для избежания гонки при инкременте и декременте 
+        /// <see cref="countOfСonnectedСlients"/>.
+        /// </summary>
+        private AutoResetEvent resetEvent = new AutoResetEvent(true);
+
+        /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpServer"/>.
         /// </summary>
         /// <param name="portName">Порт для прослушивания входящих подключений.</param>
@@ -93,7 +99,10 @@ namespace SimpleFTP_Server
                     endOfRequestProcessing.Reset();
                 }
 
+                resetEvent.WaitOne();
                 countOfСonnectedСlients++;
+                resetEvent.Set();
+
                 ThreadPool.QueueUserWorkItem(ProcessingRequest, client);
             }
 
@@ -242,7 +251,10 @@ namespace SimpleFTP_Server
         private void Disconnect(TcpClient client)
         {
             client.Close();
+
+            resetEvent.WaitOne();
             countOfСonnectedСlients--;
+            resetEvent.Set();
 
             if (countOfСonnectedСlients == 0)
             {
