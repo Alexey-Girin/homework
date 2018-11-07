@@ -53,7 +53,6 @@ namespace MyThreadPool.Tests
             Assert.AreEqual(threadPool.GetCountOfActiveThreads(), numOfThreads);
 
             threadPool.Shutdown();
-            Thread.Sleep(50);
             Assert.AreEqual(threadPool.GetCountOfActiveThreads(), 0);
         }
 
@@ -68,7 +67,6 @@ namespace MyThreadPool.Tests
             var func = new Func<int>(() => { return variable / 0; });
 
             var result = threadPool.AddTask(func).Result;
-            threadPool.Shutdown();
         }
 
         [TestMethod]
@@ -80,8 +78,7 @@ namespace MyThreadPool.Tests
             int variable = 1;
             var firstFunc = new Func<int>(() => { return variable + variable; });
 
-            double func(int var) => Math.Sqrt(var);
-            Func<int, double> secondFunc = func;
+            double secondFunc(int var) => Math.Sqrt(var);
 
             var firstTask = threadPool.AddTask(firstFunc);
             var secondTask = firstTask.ContinueWith(secondFunc);
