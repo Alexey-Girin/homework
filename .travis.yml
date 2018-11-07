@@ -1,2 +1,5 @@
 language: csharp
 solution: semester_3/homework_2/MyThreadPool/MyThreadPool.sln
+branches:
+  only:
+    - homework-3.2
