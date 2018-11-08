@@ -74,7 +74,7 @@ namespace MyThreadPool
             /// <summary>
             /// Объект, необходимый для синхронизации потоков. 
             /// </summary>
-            private AutoResetEvent reserEvent = new AutoResetEvent(true);
+            private AutoResetEvent resetEvent = new AutoResetEvent(true);
 
             /// <summary>
             /// Конструктор экземпляра класса <see cref="MyTask{TResult}"/>.
@@ -97,7 +97,7 @@ namespace MyThreadPool
             /// <returns>Новая задача, принятая к исполнению.</returns>
             public IMyTask<TNewResult> ContinueWith<TNewResult>(Func<TResult, TNewResult> newFunc)
             {
-                reserEvent.WaitOne();
+                resetEvent.WaitOne();
 
                 if (IsCompleted)
                 {
@@ -107,7 +107,7 @@ namespace MyThreadPool
                 var myTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
                 actions.Enqueue(myTask.PerformTask);
 
-                reserEvent.Set();
+                resetEvent.Set();
 
                 return myTask;
             }
@@ -137,14 +137,14 @@ namespace MyThreadPool
             /// </summary>
             private void AddActionsToThreadPool()
             {
-                reserEvent.WaitOne();
+                resetEvent.WaitOne();
 
                 foreach (var action in actions)
                 {
                     threadPool.AddAction(action);
                 }
 
-                reserEvent.Set();
+                resetEvent.Set();
             }
         }
 
