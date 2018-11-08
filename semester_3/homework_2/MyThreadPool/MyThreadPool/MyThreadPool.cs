@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace MyThreadPool
@@ -21,13 +22,13 @@ namespace MyThreadPool
             public bool IsCompleted { get; private set; } = false;
 
             /// <summary>
-            /// Возвращает результат выполнения задачи.
+            /// Свойство, которое возвращает результат выполнения задачи.
             /// </summary>
             public TResult Result
             {
                 get
                 {
-                    resetEvent.WaitOne();
+                    taskСompleted.WaitOne();
 
                     if (outerException != null)
                     {
@@ -38,8 +39,10 @@ namespace MyThreadPool
                 }
             }
 
-            
-            private AutoResetEvent resetEvent = new AutoResetEvent(true);
+            /// <summary>
+            /// После выплнения задачи устанавливается сигнальное состояние.
+            /// </summary>
+            private ManualResetEvent taskСompleted = new ManualResetEvent(false);
 
             /// <summary>
             /// Исключение, которое могло возникнуть в процессе выполнения задачи.
@@ -62,9 +65,16 @@ namespace MyThreadPool
             private MyThreadPool threadPool;
 
             /// <summary>
-            /// Очередь добавлений новых вычислений в threadPool.
+            /// Очередь делегатов на добавление в <see cref="threadPool"/>,
+            /// каждый из которых указывает на выполнение задачи, представляющей вычисление,
+            /// примененное к результату текущей задачи.
             /// </summary>
-            private ConcurrentQueue<Action> continueWithQueue = new ConcurrentQueue<Action>();
+            private Queue<Action> actions = new Queue<Action>();
+
+            /// <summary>
+            /// Объект, необходимый для синхронизации потоков. 
+            /// </summary>
+            private AutoResetEvent reserEvent = new AutoResetEvent(true);
 
             /// <summary>
             /// Конструктор экземпляра класса <see cref="MyTask{TResult}"/>.
@@ -87,19 +97,19 @@ namespace MyThreadPool
             /// <returns>Новая задача, принятая к исполнению.</returns>
             public IMyTask<TNewResult> ContinueWith<TNewResult>(Func<TResult, TNewResult> newFunc)
             {
-                resetEvent.WaitOne();
+                reserEvent.WaitOne();
 
                 if (IsCompleted)
                 {
                     return threadPool.AddTask(() => { return newFunc(Result); });
                 }
 
-                var newTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
-                continueWithQueue.Enqueue(() => threadPool.tasks.Enqueue(new Action(() => newTask.PerformTask())));
+                var myTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
+                actions.Enqueue(myTask.PerformTask);
 
-                resetEvent.Set();
+                reserEvent.Set();
 
-                return newTask;
+                return myTask;
             }
 
             /// <summary>
@@ -107,8 +117,6 @@ namespace MyThreadPool
             /// </summary>
             public void PerformTask()
             {
-                IsCompleted = true;
-
                 try
                 {
                     intermediateResult = func();
@@ -118,19 +126,25 @@ namespace MyThreadPool
                     outerException = exception;
                 }
 
-                if (continueWithQueue.IsEmpty)
+                IsCompleted = true;
+                taskСompleted.Set();
+
+                AddActionsToThreadPool();
+            }
+
+            /// <summary>
+            /// Добавление элементов <see cref="actions"/> в <see cref="threadPool"/>.
+            /// </summary>
+            private void AddActionsToThreadPool()
+            {
+                reserEvent.WaitOne();
+
+                foreach (var action in actions)
                 {
-                    return;
+                    threadPool.AddAction(action);
                 }
 
-                resetEvent.WaitOne();
-
-                foreach (var addNewAction in continueWithQueue)
-                {
-                    addNewAction();
-                }
-
-                resetEvent.Set();
+                reserEvent.Set();
             }
         }
 
@@ -142,18 +156,23 @@ namespace MyThreadPool
         /// <summary>
         /// Очередь задач, принятых к исполнению.
         /// </summary>
-        private ConcurrentQueue<Action> tasks = new ConcurrentQueue<Action>();
+        private Queue<Action> tasks = new Queue<Action>();
 
         /// <summary>
         /// Объект, необходимый для синхронизации потоков.
         /// </summary>
-        private AutoResetEvent resetEvent = new AutoResetEvent(true);
+        private object locker = new object();
+
+        /// <summary>
+        /// Объект, принимающий сигнальное состояние, если <see cref="tasks"/> не пуст.
+        /// </summary>
+        private ManualResetEvent tasksNotEmpty = new ManualResetEvent(false);
 
         /// <summary>
         /// Объект, необходимый для избежания гонки при инкременте и декременте
         /// <see cref="countOfActiveThreads"/>.
         /// </summary>
-        private object locker = new object();
+        private object lockerCountOfActiveThreads = new object();
 
         /// <summary>
         /// Объект, принимающий сигнальное состояние после завершения работы потоков.
@@ -194,29 +213,31 @@ namespace MyThreadPool
         /// </summary>
         public void ThreadMethod()
         {
-            lock (locker)
+            lock (lockerCountOfActiveThreads)
             {
                 countOfActiveThreads++;
             }
 
             while (!cts.IsCancellationRequested)
             {
-                resetEvent.WaitOne();
+                tasksNotEmpty.WaitOne();
 
-                if (tasks.Count == 0)
+                Action task = null;
+
+                lock (locker)
                 {
-                    resetEvent.Set();
-                    continue;
+                    task = tasks.Dequeue();
+
+                    if (tasks.Count == 0)
+                    {
+                        tasksNotEmpty.Reset();
+                    }
                 }
-
-                tasks.TryDequeue(out Action task);
-
-                resetEvent.Set();
 
                 task();
             }
 
-            lock (locker)
+            lock (lockerCountOfActiveThreads)
             {
                 countOfActiveThreads--;
             }
@@ -238,8 +259,19 @@ namespace MyThreadPool
         {
             var newTask = new MyTask<TResult>(newFunc, this);
             tasks.Enqueue(newTask.PerformTask);
+            tasksNotEmpty.Set();
 
             return newTask;
+        }
+
+        /// <summary>
+        /// Добавление делегата <paramref name="actionToAdd"/> в очередь.
+        /// </summary>
+        /// <param name="actionToAdd">Делегат, указывающий на выполение задачи.</param>
+        public void AddAction(Action actionToAdd)
+        {
+            tasks.Enqueue(actionToAdd);
+            tasksNotEmpty.Set();
         }
 
         /// <summary>
