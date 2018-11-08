@@ -38,10 +38,8 @@ namespace MyThreadPool
                 }
             }
 
-            /// <summary>
-            /// После выплнения задачи устанавливается сигнальное состояние.
-            /// </summary>
-            private ManualResetEvent resetEvent = new ManualResetEvent(false);
+            
+            private AutoResetEvent resetEvent = new AutoResetEvent(true);
 
             /// <summary>
             /// Исключение, которое могло возникнуть в процессе выполнения задачи.
@@ -62,6 +60,11 @@ namespace MyThreadPool
             /// Объект класса <see cref="MyThreadPool"/>, в котором выполняется задача.
             /// </summary>
             private MyThreadPool threadPool;
+
+            /// <summary>
+            /// Очередь добавлений новых вычислений в threadPool.
+            /// </summary>
+            private ConcurrentQueue<Action> continueWithQueue = new ConcurrentQueue<Action>();
 
             /// <summary>
             /// Конструктор экземпляра класса <see cref="MyTask{TResult}"/>.
@@ -86,7 +89,17 @@ namespace MyThreadPool
             {
                 resetEvent.WaitOne();
 
-                return threadPool.AddTask(() => { return newFunc(Result); });
+                if (IsCompleted)
+                {
+                    return threadPool.AddTask(() => { return newFunc(Result); });
+                }
+
+                var newTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
+                continueWithQueue.Enqueue(() => threadPool.tasks.Enqueue(new Action(() => newTask.PerformTask())));
+
+                resetEvent.Set();
+
+                return newTask;
             }
 
             /// <summary>
@@ -94,6 +107,8 @@ namespace MyThreadPool
             /// </summary>
             public void PerformTask()
             {
+                IsCompleted = true;
+
                 try
                 {
                     intermediateResult = func();
@@ -103,7 +118,18 @@ namespace MyThreadPool
                     outerException = exception;
                 }
 
-                IsCompleted = true;
+                if (continueWithQueue.IsEmpty)
+                {
+                    return;
+                }
+
+                resetEvent.WaitOne();
+
+                foreach (var addNewAction in continueWithQueue)
+                {
+                    addNewAction();
+                }
+
                 resetEvent.Set();
             }
         }
