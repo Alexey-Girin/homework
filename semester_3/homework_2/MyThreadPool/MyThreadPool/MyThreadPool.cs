@@ -74,7 +74,7 @@ namespace MyThreadPool
             /// <summary>
             /// Объект, необходимый для синхронизации потоков. 
             /// </summary>
-            private AutoResetEvent resetEvent = new AutoResetEvent(true);
+            object locker = new object();
 
             /// <summary>
             /// Конструктор экземпляра класса <see cref="MyTask{TResult}"/>.
@@ -97,19 +97,18 @@ namespace MyThreadPool
             /// <returns>Новая задача, принятая к исполнению.</returns>
             public IMyTask<TNewResult> ContinueWith<TNewResult>(Func<TResult, TNewResult> newFunc)
             {
-                resetEvent.WaitOne();
-
-                if (IsCompleted)
+                lock (locker)
                 {
-                    return threadPool.AddTask(() => { return newFunc(Result); });
+                    if (IsCompleted)
+                    {
+                        return threadPool.AddTask(() => { return newFunc(Result); });
+                    }
+
+                    var newTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
+                    actions.Enqueue(newTask.PerformTask);
+
+                    return newTask;
                 }
-
-                var myTask = new MyTask<TNewResult>(() => { return newFunc(Result); }, threadPool);
-                actions.Enqueue(myTask.PerformTask);
-
-                resetEvent.Set();
-
-                return myTask;
             }
 
             /// <summary>
@@ -130,6 +129,7 @@ namespace MyThreadPool
                 taskСompleted.Set();
 
                 AddActionsToThreadPool();
+                func = null;
             }
 
             /// <summary>
@@ -137,14 +137,13 @@ namespace MyThreadPool
             /// </summary>
             private void AddActionsToThreadPool()
             {
-                resetEvent.WaitOne();
-
-                foreach (var action in actions)
+                lock (locker)
                 {
-                    threadPool.AddAction(action);
+                    foreach (var action in actions)
+                    {
+                        threadPool.AddAction(action);
+                    }
                 }
-
-                resetEvent.Set();
             }
         }
 
@@ -218,14 +217,24 @@ namespace MyThreadPool
                 countOfActiveThreads++;
             }
 
-            while (!cts.IsCancellationRequested)
+            while (true)
             {
                 tasksNotEmpty.WaitOne();
+
+                if (cts.IsCancellationRequested)
+                {
+                    break;
+                }
 
                 Action task = null;
 
                 lock (locker)
                 {
+                    if (tasks.Count == 0 || cts.IsCancellationRequested)
+                    {
+                        continue;
+                    }
+
                     task = tasks.Dequeue();
 
                     if (tasks.Count == 0)
@@ -280,6 +289,7 @@ namespace MyThreadPool
         public void Shutdown()
         {
             cts.Cancel();
+            tasksNotEmpty.Set();
             resetShutdown.WaitOne();
         }
 

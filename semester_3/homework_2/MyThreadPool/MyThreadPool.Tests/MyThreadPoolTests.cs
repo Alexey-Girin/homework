@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MyThreadPool.Tests
@@ -17,19 +16,16 @@ namespace MyThreadPool.Tests
             var tasks = new IMyTask<int>[numOfTasks];
 
             int variable = 2;
-            var func = new Func<int>(() => { return variable * variable; });
             int trueResult = variable * variable;
 
             for (int i = 0; i < numOfTasks; i++)
             {
-                tasks[i] = threadPool.AddTask(func);
+                tasks[i] = threadPool.AddTask(() => variable * variable);
             }
 
-            threadPool.Shutdown();
-                
             for (int i = 0; i < numOfTasks; i++)
             {
-                Assert.AreEqual(tasks[i].Result, trueResult);
+                Assert.AreEqual(trueResult, tasks[i].Result);
                 Assert.IsTrue(tasks[i].IsCompleted);
             }
         }
@@ -40,20 +36,19 @@ namespace MyThreadPool.Tests
             const int numOfThreads = 100;
             var threadPool = new MyThreadPool(numOfThreads);
 
-            Assert.AreEqual(threadPool.GetCountOfActiveThreads(), numOfThreads);
+            Assert.AreEqual(numOfThreads, threadPool.GetCountOfActiveThreads());
 
-            var func = new Func<int>(() => { return 1; });
             const int numOfTasks = 100;
 
             for (int i = 0; i < numOfTasks; i++)
             {
-                threadPool.AddTask(func);
+                threadPool.AddTask(() => 1);
             }
 
-            Assert.AreEqual(threadPool.GetCountOfActiveThreads(), numOfThreads);
+            Assert.AreEqual(numOfThreads, threadPool.GetCountOfActiveThreads());
 
             threadPool.Shutdown();
-            Assert.AreEqual(threadPool.GetCountOfActiveThreads(), 0);
+            Assert.AreEqual(0, threadPool.GetCountOfActiveThreads());
         }
 
         [TestMethod]
@@ -64,9 +59,7 @@ namespace MyThreadPool.Tests
             var threadPool = new MyThreadPool(numOfThreads);
 
             int variable = 2;
-            var func = new Func<int>(() => { return variable / 0; });
-
-            var result = threadPool.AddTask(func).Result;
+            var result = threadPool.AddTask(() => variable / 0).Result;
         }
 
         [TestMethod]
@@ -76,15 +69,11 @@ namespace MyThreadPool.Tests
             var threadPool = new MyThreadPool(numOfThreads);
 
             int variable = 1;
-            var firstFunc = new Func<int>(() => { return variable + variable; });
-
-            double secondFunc(int var) => Math.Sqrt(var);
-
-            var firstTask = threadPool.AddTask(firstFunc);
-            var secondTask = firstTask.ContinueWith(secondFunc);
+            var firstTask = threadPool.AddTask(() => variable + variable);
+            var secondTask = firstTask.ContinueWith((int var) => Math.Sqrt(var));
 
             double trueResult = Math.Sqrt(variable + variable);
-            Assert.AreEqual(secondTask.Result, trueResult);
+            Assert.AreEqual(trueResult, secondTask.Result);
         }
 
         [TestMethod]
@@ -94,17 +83,16 @@ namespace MyThreadPool.Tests
             var threadPool = new MyThreadPool(numOfThreads);
 
             int firstVariable = 1;
-            var firstFunc = new Func<int>(() => { return firstVariable + firstVariable; });
-            var firstTask = threadPool.AddTask(firstFunc);
+            var firstTask = threadPool.AddTask(() => firstVariable + firstVariable);
 
             string secondVariable = "1";
-            var secondFunc = new Func<string>(() => { return secondVariable + secondVariable; });
-            var secondTask = threadPool.AddTask(secondFunc);
+            var secondTask = threadPool.AddTask(() => secondVariable + secondVariable);
 
             const int firstTrueResult = 2;
             const string secondTrueResult = "11";
-            Assert.AreEqual(firstTask.Result, firstTrueResult);
-            Assert.AreEqual(secondTask.Result, secondTrueResult);
+
+            Assert.AreEqual(firstTrueResult, firstTask.Result);
+            Assert.AreEqual(secondTrueResult, secondTask.Result);
         }
     }
 }
