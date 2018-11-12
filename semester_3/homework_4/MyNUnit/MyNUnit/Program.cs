@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MyNUnit
+﻿namespace MyNUnit
 {
     class Program
     {
         static void Main(string[] args)
         {
+            string path = @"C:\Users\Алексей\Desktop\homework\semester_3\" +
+                @"homework_4\MyNUnit\TestingProject\bin\Debug";
+
+            TestingSystem.RunTests(path);
         }
     }
 }

@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EAAC5789-09E4-4D6F-A5F4-06D4AD14CBB7}</ProjectGuid>
+    <ProjectGuid>{87994252-84BA-4480-A692-D405C243A2A2}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>MyNUnit</RootNamespace>
-    <AssemblyName>MyNUnit</AssemblyName>
+    <RootNamespace>TestingProject</RootNamespace>
+    <AssemblyName>TestingProject</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -43,13 +43,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TestAttribute.cs" />
-    <Compile Include="TestingSystem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestingClass.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MyNUnit\MyNUnit.csproj">
+      <Project>{eaac5789-09e4-4d6f-a5f4-06d4ad14cbb7}</Project>
+      <Name>MyNUnit</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
