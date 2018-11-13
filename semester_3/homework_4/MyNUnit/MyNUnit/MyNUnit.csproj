@@ -43,8 +43,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\AfterAttribute.cs" />
+    <Compile Include="Attributes\AfterClassAttribute.cs" />
+    <Compile Include="Attributes\BeforeAttribute.cs" />
+    <Compile Include="Attributes\BeforeClassAttribute.cs" />
     <Compile Include="Exceptions\ExpectedExceptionWasNotThrown.cs" />
-    <Compile Include="TestAttribute.cs" />
+    <Compile Include="Attributes\TestAttribute.cs" />
     <Compile Include="TestingSystem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

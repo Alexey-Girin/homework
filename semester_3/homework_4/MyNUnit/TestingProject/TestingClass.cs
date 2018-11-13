@@ -5,6 +5,8 @@ namespace TestingProject
 {
     public class TestingClass
     {
+        public int A { get; set; } = 0;
+
         [Test]
         public void TestMethod()
         {
@@ -33,6 +35,23 @@ namespace TestingProject
         [Test(Excepted = typeof(Exception))]
         public void TestMethod4()
         {
+        }
+
+        [BeforeClass]
+        public void BeforeClassMethod()
+        {
+            A++;
+        }
+
+        [AfterClass]
+        public void AfterClassMethod()
+        {
+        }
+
+        [BeforeClass]
+        public void BeforeClassMethod1()
+        {
+            A++;
         }
     }
 }

@@ -2,43 +2,29 @@
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
-using System.Threading;
 using MyNUnit.Exceptions;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyNUnit
 {
     public static class TestingSystem
     {
-        private static volatile bool enumerationIsOver = false;
-
-        private static volatile int countOfActiveTestExecution = 0;
-
-        private static object countLocker = new object();
-
         private static object displayLocker = new object();
-
-        private static ManualResetEvent resetEvent = new ManualResetEvent(true);
 
         public static void RunTests(string path)
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(path);
-            string[] assemblyPaths = Directory.GetFiles(path, "*.exe");
-
-            foreach (var assemblyPath in assemblyPaths)
+            foreach (var assemblyPath in Directory.GetFiles(path, "*.exe"))
             {
                 TypesEnumeration(assemblyPath);
             }
-
-            enumerationIsOver = true;
-            resetEvent.WaitOne();
         }
 
         private static void TypesEnumeration(string assemblyPath)
         {
             Assembly assembly = Assembly.LoadFile(assemblyPath);
-            Type[] types = assembly.GetExportedTypes();
 
-            foreach (var type in types)
+            foreach (var type in assembly.GetExportedTypes())
             {
                 MethodsEnumeration(type);
             }
@@ -46,50 +32,118 @@ namespace MyNUnit
 
         private static void MethodsEnumeration(Type type)
         {
+            object instanceOfType = null;
+
+            try
+            {
+                instanceOfType = Activator.CreateInstance(type);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            var methods = new Methods();
+
             foreach (var methodInfo in type.GetMethods())
             {
-                Attribute testAttribute = null;
-
-                foreach (var attribute in Attribute.GetCustomAttributes(methodInfo))
+                var metadata = new Metadata
                 {
-                    if (attribute.GetType() == typeof(TestAttribute))
-                    {
-                        testAttribute = attribute;
-                        break;
-                    }
-                }
+                    Type = type,
+                    MethodInfo = methodInfo,
+                    Attribute = null,
+                    InstanceOfType = instanceOfType
+                };
+                AttributesEnumeration(metadata, methods);
+            }
 
-                if (testAttribute == null)
+            if (methods.TestMethods.Count == 0)
+            {
+                return;
+            }
+
+            if (methods.BeforeClassMethods.Count != 0)
+            {
+                MethodsExecution(methods.BeforeClassMethods);
+            }
+
+            MethodsExecution(methods.TestMethods);
+
+            if (methods.AfterClassMethods.Count != 0)
+            {
+                MethodsExecution(methods.AfterClassMethods);
+            }
+        }
+
+        private static void AttributesEnumeration(Metadata metadata, Methods methods)
+        {
+            foreach (var attribute in Attribute.GetCustomAttributes(metadata.MethodInfo))
+            {
+                var attributType = attribute.GetType();
+
+                if (attributType == typeof(TestAttribute))
+                {
+                    metadata.Attribute = attribute;
+                    methods.TestMethods.Add(metadata);
+                }
+                else if (attributType == typeof(BeforeClassAttribute))
+                {
+                    methods.BeforeClassMethods.Add(metadata);
+                }
+                else if (attributType == typeof(AfterClassAttribute))
+                {
+                    methods.AfterClassMethods.Add(metadata);
+                }
+                else if (attributType == typeof(AfterAttribute))
+                {
+                    methods.AfterMethods.Add(metadata);
+                }
+                else if (attributType == typeof(BeforeAttribute))
+                {
+                    methods.BeforeMethods.Add(metadata);
+                }
+                else
                 {
                     continue;
                 }
 
-                resetEvent.Reset();
-                ThreadPool.QueueUserWorkItem(TestExecution, 
-                    new Metadata(type, methodInfo, testAttribute));
+                return;
             }
         }
 
-        private static void TestExecution(object metaData)
+        private static void MethodsExecution(List<Metadata> methods)
         {
-            lock (countLocker)
+            Task[] tasks = new Task[methods.Count];
+
+            for (int i = 0; i < methods.Count; i++)
             {
-                countOfActiveTestExecution++;
+                int j = i;
+                tasks[j] = Task.Factory.StartNew(() => Execution(methods[j]));
             }
 
-            var methodInfo = (metaData as Metadata).MethodInfo;
-            var type = (metaData as Metadata).Type;
-            var attribute = (metaData as Metadata).Attribute;
+            Task.WaitAll(tasks);
+        }
 
-            if ((attribute as TestAttribute).Ignore != null)
+        private static void Execution(Metadata metadata)
+        {
+            if (metadata.Attribute == null)
+            {
+                MethodExecution(metadata);
+                return;
+            }
+
+            TestExecution(metadata);
+        }
+
+        private static void TestExecution(Metadata metadata)
+        {
+            if ((metadata.Attribute as TestAttribute).Ignore != null)
             {
                 lock (displayLocker)
                 {
-                    DisplayReasonForIgnoring($"{type.Namespace}.{type.Name}.{methodInfo.Name}\t",
-                    attribute);
+                    DisplayReasonForIgnoring(metadata);
                 }
 
-                FinishTestExecution();
                 return;
             }
 
@@ -100,21 +154,21 @@ namespace MyNUnit
             try
             {
                 stopwatch.Start();
-                methodInfo.Invoke(Activator.CreateInstance(type), null);
+                metadata.MethodInfo.Invoke(metadata.InstanceOfType, null);
                 stopwatch.Stop();
             }
-            catch (Exception methodException)
+            catch (Exception e)
             {
-                isCatchException = true; 
+                isCatchException = true;
 
-                if (methodException.InnerException.GetType() != 
-                    (attribute as TestAttribute).Excepted)
+                if (e.InnerException.GetType() !=
+                    (metadata.Attribute as TestAttribute).Excepted)
                 {
-                    exception = methodException;
+                    exception = e;
                 }
             }
 
-            if (exception == null && (attribute as TestAttribute).Excepted != null &&
+            if (exception == null && (metadata.Attribute as TestAttribute).Excepted != null &&
                 !isCatchException)
             {
                 exception = new ExpectedExceptionWasNotThrown();
@@ -122,17 +176,21 @@ namespace MyNUnit
 
             lock (displayLocker)
             {
-                DisplayTestResult($"{type.Namespace}.{type.Name}.{methodInfo.Name}\t",
-                    exception, stopwatch);
+                DisplayTestResult(metadata, exception, stopwatch);
             }
-
-            FinishTestExecution();
         }
 
-        private static void DisplayTestResult(string methodName,
-            Exception exception, Stopwatch stopwatch)
+        private static void DisplayReasonForIgnoring(Metadata metadata)
         {
-            Console.WriteLine($"{methodName} result: {exception == null}");
+            Console.WriteLine("Result:\tIgnore");
+            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}");
+            Console.WriteLine($"Reason:\t{(metadata.Attribute as TestAttribute).Ignore}\n");
+        }
+
+        private static void DisplayTestResult(Metadata metadata, Exception exception, Stopwatch stopwatch)
+        {
+            Console.WriteLine($"Result:\t{exception == null}");
+            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}");
 
             if (exception != null)
             {
@@ -140,41 +198,27 @@ namespace MyNUnit
                     exception : exception.InnerException);
             }
 
-            Console.WriteLine($"time: {stopwatch.ElapsedMilliseconds} ms\n");
+            Console.WriteLine($"Time:\t{stopwatch.ElapsedMilliseconds} ms\n");
         }
 
-        private static void FinishTestExecution()
-        {
-            lock (countLocker)
-            {
-                countOfActiveTestExecution--;
-            }
-
-            if (enumerationIsOver && countOfActiveTestExecution == 0)
-            {
-                resetEvent.Set();
-
-            }
-        }
-
-        private static void DisplayReasonForIgnoring(string methodName, Attribute attribute)
-        {
-            Console.WriteLine($"{methodName} result: Ignore");
-            Console.WriteLine($"reason: {(attribute as TestAttribute).Ignore}\n");
-        }
+        private static void MethodExecution(Metadata metadata)
+            => metadata.MethodInfo.Invoke(metadata.InstanceOfType, null);
 
         private class Metadata
         {
-            public Type Type { get; }
-            public MethodInfo MethodInfo { get; }
-            public Attribute Attribute { get; }
+            public Type Type { get; set; }
+            public MethodInfo MethodInfo { get; set; }
+            public Attribute Attribute { get; set; }
+            public object InstanceOfType { get; set; }
+        }
 
-            public Metadata(Type type, MethodInfo methodInfo, Attribute attribute)
-            {
-                Type = type;
-                MethodInfo = methodInfo;
-                Attribute = attribute;
-            }
+        private class Methods
+        {
+            public List<Metadata> TestMethods { get; set; } = new List<Metadata>();
+            public List<Metadata> BeforeClassMethods { get; set; } = new List<Metadata>();
+            public List<Metadata> AfterClassMethods { get; set; } = new List<Metadata>();
+            public List<Metadata> BeforeMethods { get; set; } = new List<Metadata>();
+            public List<Metadata> AfterMethods { get; set; } = new List<Metadata>();
         }
     }
 }
