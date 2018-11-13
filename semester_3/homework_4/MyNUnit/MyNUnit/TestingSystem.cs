@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;
 using System.Threading;
+using MyNUnit.Exceptions;
 
 namespace MyNUnit
 {
@@ -64,7 +65,8 @@ namespace MyNUnit
                 }
 
                 resetEvent.Reset();
-                ThreadPool.QueueUserWorkItem(TestExecution, new Metadata(type, methodInfo));
+                ThreadPool.QueueUserWorkItem(TestExecution, 
+                    new Metadata(type, methodInfo, testAttribute));
             }
         }
 
@@ -77,9 +79,23 @@ namespace MyNUnit
 
             var methodInfo = (metaData as Metadata).MethodInfo;
             var type = (metaData as Metadata).Type;
-            var stopwatch = new Stopwatch();
+            var attribute = (metaData as Metadata).Attribute;
+
+            if ((attribute as TestAttribute).Ignore != null)
+            {
+                lock (displayLocker)
+                {
+                    DisplayReasonForIgnoring($"{type.Namespace}.{type.Name}.{methodInfo.Name}\t",
+                    attribute);
+                }
+
+                FinishTestExecution();
+                return;
+            }
 
             Exception exception = null;
+            bool isCatchException = false;
+            var stopwatch = new Stopwatch();
 
             try
             {
@@ -89,14 +105,46 @@ namespace MyNUnit
             }
             catch (Exception methodException)
             {
-                exception = methodException;
+                isCatchException = true; 
+
+                if (methodException.InnerException.GetType() != 
+                    (attribute as TestAttribute).Excepted)
+                {
+                    exception = methodException;
+                }
+            }
+
+            if (exception == null && (attribute as TestAttribute).Excepted != null &&
+                !isCatchException)
+            {
+                exception = new ExpectedExceptionWasNotThrown();
             }
 
             lock (displayLocker)
             {
-                DisplayTestResult(type, methodInfo, exception, stopwatch);
+                DisplayTestResult($"{type.Namespace}.{type.Name}.{methodInfo.Name}\t",
+                    exception, stopwatch);
             }
 
+            FinishTestExecution();
+        }
+
+        private static void DisplayTestResult(string methodName,
+            Exception exception, Stopwatch stopwatch)
+        {
+            Console.WriteLine($"{methodName} result: {exception == null}");
+
+            if (exception != null)
+            {
+                Console.WriteLine(exception.GetType() == typeof(ExpectedExceptionWasNotThrown) ?
+                    exception : exception.InnerException);
+            }
+
+            Console.WriteLine($"time: {stopwatch.ElapsedMilliseconds} ms\n");
+        }
+
+        private static void FinishTestExecution()
+        {
             lock (countLocker)
             {
                 countOfActiveTestExecution--;
@@ -105,32 +153,27 @@ namespace MyNUnit
             if (enumerationIsOver && countOfActiveTestExecution == 0)
             {
                 resetEvent.Set();
+
             }
         }
 
-        private static void DisplayTestResult(Type type, MethodInfo methodInfo,
-            Exception exception, Stopwatch stopwatch)
+        private static void DisplayReasonForIgnoring(string methodName, Attribute attribute)
         {
-            Console.Write($"{type.Namespace}.{type.Name}.{methodInfo.Name}\t");
-            Console.WriteLine($"result: {exception == null}");
-
-            if (exception != null)
-            {
-                Console.WriteLine(exception.InnerException);
-            }
-
-            Console.WriteLine($"time: {stopwatch.ElapsedMilliseconds} ms\n");
+            Console.WriteLine($"{methodName} result: Ignore");
+            Console.WriteLine($"reason: {(attribute as TestAttribute).Ignore}\n");
         }
 
         private class Metadata
         {
             public Type Type { get; }
             public MethodInfo MethodInfo { get; }
+            public Attribute Attribute { get; }
 
-            public Metadata(Type type, MethodInfo methodInfo)
+            public Metadata(Type type, MethodInfo methodInfo, Attribute attribute)
             {
                 Type = type;
                 MethodInfo = methodInfo;
+                Attribute = attribute;
             }
         }
     }

@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\ExpectedExceptionWasNotThrown.cs" />
     <Compile Include="TestAttribute.cs" />
     <Compile Include="TestingSystem.cs" />
     <Compile Include="Program.cs" />
