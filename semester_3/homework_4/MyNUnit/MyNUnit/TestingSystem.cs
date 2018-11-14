@@ -131,15 +131,26 @@ namespace MyNUnit
 
         private static void TestExecution(TestMetadata metadata, Methods methods)
         {
-            MethodsExecution(methods.BeforeMethods);
-
-            if ((metadata.Attribute as TestAttribute).Ignore != null)
+            try
+            {
+                MethodsExecution(methods.BeforeMethods);
+            }
+            catch (Exception methodException)
             {
                 lock (displayLocker)
                 {
-                    DisplayReasonForIgnoring(metadata);
+                    DisplayMethodError(metadata, methodException);
                 }
 
+                return;
+            }
+
+            Action result = null;
+
+            if ((metadata.Attribute as TestAttribute).Ignore != null)
+            {
+                result = () => DisplayReasonForIgnoring(metadata);
+                FinishTestExecution(result, metadata, methods);
                 return;
             }
 
@@ -170,12 +181,25 @@ namespace MyNUnit
                 exception = new ExpectedExceptionWasNotThrown();
             }
 
-            lock (displayLocker)
+            result = () => DisplayTestResult(metadata, exception, stopwatch);
+            FinishTestExecution(result, metadata, methods);
+        }
+
+        private static void FinishTestExecution(Action result, TestMetadata metadata, Methods methods)
+        {
+            try
             {
-                DisplayTestResult(metadata, exception, stopwatch);
+                MethodsExecution(methods.AfterMethods);
+            }
+            catch (Exception methodException)
+            {
+                result = () => DisplayMethodError(metadata, methodException);
             }
 
-            MethodsExecution(methods.AfterMethods);
+            lock (displayLocker)
+            {
+                result();
+            }
         }
 
         private static void DisplayReasonForIgnoring(TestMetadata metadata)
@@ -202,19 +226,27 @@ namespace MyNUnit
             Console.WriteLine($"Time:\t{stopwatch.ElapsedMilliseconds} ms\n");
         }
 
-        private static void MethodsExecution(List<Metadata> methods)
+        private static void DisplayMethodError(TestMetadata metadata, Exception exception)
         {
-            foreach (var method in methods)
-            {
-                method.MethodInfo.Invoke(method.InstanceOfType, null);
-            }
+            Console.WriteLine("Result:\tIndefinite");
+            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
+                $"{metadata.MethodInfo.Name}");
+            Console.WriteLine($"Reason:{exception.InnerException.StackTrace} было брошено исключение");
+            Console.WriteLine($"{exception.InnerException.GetType()}: {exception.InnerException.Message}\n");
         }
 
-        private static void MethodsExecution(BlockingCollection<Metadata> methods)
+        private static void MethodsExecution(IEnumerable<Metadata> methods)
         {
             foreach (var method in methods)
             {
-                method.MethodInfo.Invoke(method.InstanceOfType, null);
+                try
+                {
+                    method.MethodInfo.Invoke(method.InstanceOfType, null);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
             }
         }
 

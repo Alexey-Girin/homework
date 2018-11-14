@@ -66,5 +66,16 @@ namespace TestingProject
         {
             A++;
         }
+
+        [After]
+        public void AfterMethod1()
+        {
+            throw new Exception("12345");
+        }
+
+        [After]
+        public void AfterMethod2()
+        {
+        }
     }
 }
