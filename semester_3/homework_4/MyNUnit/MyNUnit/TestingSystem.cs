@@ -32,7 +32,19 @@ namespace MyNUnit
         /// <param name="path">Путь, по которому выполняется обход сборок.</param>
         private static void AssembliesEnumeration(string path)
         {
-            foreach (var assemblyPath in Directory.GetFiles(path, "*.exe"))
+            string[] assemblyPaths = null;
+
+            try
+            {
+                assemblyPaths = Directory.GetFiles(path, "*.exe");
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Ошибка. Путь имеет недопустимую форму");
+                return;
+            }
+
+            foreach (var assemblyPath in assemblyPaths)
             {
                 TypesEnumeration(assemblyPath);
             }
@@ -89,7 +101,7 @@ namespace MyNUnit
         /// Выполнение вспомогательных методов, тестовых методов, 
         /// вывод информации о результатах выполнения тестов.
         /// </summary>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         private static void Execution(Methods methods)
         {
             if (methods.TestMethods.Count == 0)
@@ -141,7 +153,7 @@ namespace MyNUnit
         /// <see cref="Methods"/>.
         /// </summary>
         /// <param name="metadata">Информация о методе.</param>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         private static void AttributesEnumeration(Metadata metadata, Methods methods)
         {
             foreach (var attribute in Attribute.GetCustomAttributes(metadata.MethodInfo))
@@ -186,9 +198,9 @@ namespace MyNUnit
         /// <summary>
         /// Параллельное выполнение тестов.
         /// </summary>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
-        /// <returns>Массив действий - вывод информации о тестах. null, если каким-либо методом с атрибутом 
-        /// <see cref="AfterAttribute"/> или <see cref="BeforeAttribute"/> было брошено исключение.</returns>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
+        /// <returns>Массив действий - вывод информации о тестах.
+        /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
         private static Action[] TestsExecution(Methods methods)
         {
             Task<Action>[] tasks = new Task<Action>[methods.TestMethods.Count];
@@ -220,7 +232,7 @@ namespace MyNUnit
         /// Выполнение теста.
         /// </summary>
         /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         /// <returns>Действие - вывод информации о тесте. 
         /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
         private static Action TestExecution(TestMetadata metadata, Methods methods)
@@ -281,7 +293,7 @@ namespace MyNUnit
         /// </summary>
         /// <param name="result">Результат выполнения теста.</param>
         /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         /// <returns>Действие - вывод информации о тесте. 
         /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
         private static Action FinishTestExecution(Action displayTestResult, TestMetadata metadata,
@@ -339,7 +351,7 @@ namespace MyNUnit
         }
 
         /// <summary>
-        /// Вывод информации о тесте, если каким-либо вспомогательным методом было брошено исключение.
+        /// Вывод информации о тесте, в случае если каким-либо вспомогательным методом было брошено исключение.
         /// </summary>
         /// <param name="metadata">Информация о тестовом методе.</param>
         /// <param name="exception">Брошенное исключение.</param>
@@ -355,7 +367,7 @@ namespace MyNUnit
         /// <summary>
         /// Выполнение вспомогательных методов.
         /// </summary>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         private static void MethodsExecution(IEnumerable<Metadata> methods)
         {
             foreach (var method in methods)
@@ -372,10 +384,10 @@ namespace MyNUnit
         }
 
         /// <summary>
-        /// Вывод информации о тестах, если каким-либо методом с 
+        /// Вывод информации о тестах, в случае если каким-либо методом с 
         /// <see cref="AfterClassAttribute"/> или <see cref="BeforeClassAttribute"/> было брошено исключение.
         /// </summary>
-        /// <param name="methods">Коллекция данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
         /// <param name="exception">Брошенное исключение.</param>
         private static void DisplayAfterClassOrBeforeClassMethodError(Methods methods, Exception exception)
         {

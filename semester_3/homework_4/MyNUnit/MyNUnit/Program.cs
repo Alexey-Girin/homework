@@ -1,18 +1,21 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace MyNUnit
+﻿namespace MyNUnit
 {
+    using System;
+
     class Program
     {
         static void Main(string[] args)
         {
-            string path = @"C:\Users\Алексей\Desktop\homework\semester_3\" +
-                @"homework_4\MyNUnit\TestingProject\bin\Debug";
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Путь не задан");
+                return;
+            }
 
-            TestingSystem.RunTests(path);
+            Console.WriteLine();
+            TestingSystem.RunTests(args[0]);
+
+            Console.ReadKey();
         }
-
-        public static void A(int x) { Console.WriteLine(x); }
     }
 }
