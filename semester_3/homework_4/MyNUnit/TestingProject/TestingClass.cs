@@ -46,6 +46,19 @@ namespace TestingProject
         [AfterClass]
         public void AfterClassMethod()
         {
+            A--;
+        }
+
+        [AfterClass]
+        public void AfterClassMethod1()
+        {
+            A++;
+        }
+
+        [AfterClass]
+        public void AfterClassMethod2()
+        {
+            A++;
         }
 
         [BeforeClass]

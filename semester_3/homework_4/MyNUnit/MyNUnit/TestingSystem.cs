@@ -5,6 +5,7 @@ using System.Diagnostics;
 using MyNUnit.Exceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace MyNUnit
 {
@@ -51,7 +52,6 @@ namespace MyNUnit
                 {
                     Type = type,
                     MethodInfo = methodInfo,
-                    Attribute = null,
                     InstanceOfType = instanceOfType
                 };
                 AttributesEnumeration(metadata, methods);
@@ -67,7 +67,7 @@ namespace MyNUnit
                 MethodsExecution(methods.BeforeClassMethods);
             }
 
-            MethodsExecution(methods.TestMethods);
+            TestsExecution(methods);
 
             if (methods.AfterClassMethods.Count != 0)
             {
@@ -83,8 +83,13 @@ namespace MyNUnit
 
                 if (attributType == typeof(TestAttribute))
                 {
-                    metadata.Attribute = attribute;
-                    methods.TestMethods.Add(metadata);
+                    methods.TestMethods.Add(new TestMetadata
+                    {
+                        Type = metadata.Type,
+                        MethodInfo = metadata.MethodInfo,
+                        InstanceOfType = metadata.InstanceOfType,
+                        Attribute = attribute
+                    });
                 }
                 else if (attributType == typeof(BeforeClassAttribute))
                 {
@@ -111,32 +116,23 @@ namespace MyNUnit
             }
         }
 
-        private static void MethodsExecution(List<Metadata> methods)
+        private static void TestsExecution(Methods methods)
         {
-            Task[] tasks = new Task[methods.Count];
+            Task[] tasks = new Task[methods.TestMethods.Count];
 
-            for (int i = 0; i < methods.Count; i++)
+            for (int i = 0; i < methods.TestMethods.Count; i++)
             {
                 int j = i;
-                tasks[j] = Task.Factory.StartNew(() => Execution(methods[j]));
+                tasks[j] = Task.Factory.StartNew(() => TestExecution(methods.TestMethods[j], methods));
             }
 
             Task.WaitAll(tasks);
         }
 
-        private static void Execution(Metadata metadata)
+        private static void TestExecution(TestMetadata metadata, Methods methods)
         {
-            if (metadata.Attribute == null)
-            {
-                MethodExecution(metadata);
-                return;
-            }
+            MethodsExecution(methods.BeforeMethods);
 
-            TestExecution(metadata);
-        }
-
-        private static void TestExecution(Metadata metadata)
-        {
             if ((metadata.Attribute as TestAttribute).Ignore != null)
             {
                 lock (displayLocker)
@@ -178,19 +174,24 @@ namespace MyNUnit
             {
                 DisplayTestResult(metadata, exception, stopwatch);
             }
+
+            MethodsExecution(methods.AfterMethods);
         }
 
-        private static void DisplayReasonForIgnoring(Metadata metadata)
+        private static void DisplayReasonForIgnoring(TestMetadata metadata)
         {
             Console.WriteLine("Result:\tIgnore");
-            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}");
+            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
+                $"{metadata.MethodInfo.Name}");
             Console.WriteLine($"Reason:\t{(metadata.Attribute as TestAttribute).Ignore}\n");
         }
 
-        private static void DisplayTestResult(Metadata metadata, Exception exception, Stopwatch stopwatch)
+        private static void DisplayTestResult(TestMetadata metadata, Exception exception,
+            Stopwatch stopwatch)
         {
             Console.WriteLine($"Result:\t{exception == null}");
-            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}");
+            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
+                $"{metadata.MethodInfo.Name}");
 
             if (exception != null)
             {
@@ -201,24 +202,43 @@ namespace MyNUnit
             Console.WriteLine($"Time:\t{stopwatch.ElapsedMilliseconds} ms\n");
         }
 
-        private static void MethodExecution(Metadata metadata)
-            => metadata.MethodInfo.Invoke(metadata.InstanceOfType, null);
+        private static void MethodsExecution(List<Metadata> methods)
+        {
+            foreach (var method in methods)
+            {
+                method.MethodInfo.Invoke(method.InstanceOfType, null);
+            }
+        }
+
+        private static void MethodsExecution(BlockingCollection<Metadata> methods)
+        {
+            foreach (var method in methods)
+            {
+                method.MethodInfo.Invoke(method.InstanceOfType, null);
+            }
+        }
 
         private class Metadata
         {
             public Type Type { get; set; }
             public MethodInfo MethodInfo { get; set; }
-            public Attribute Attribute { get; set; }
             public object InstanceOfType { get; set; }
+        }
+
+        private class TestMetadata : Metadata
+        {
+            public Attribute Attribute { get; set; }
         }
 
         private class Methods
         {
-            public List<Metadata> TestMethods { get; set; } = new List<Metadata>();
+            public List<TestMetadata> TestMethods { get; set; } = new List<TestMetadata>();
             public List<Metadata> BeforeClassMethods { get; set; } = new List<Metadata>();
             public List<Metadata> AfterClassMethods { get; set; } = new List<Metadata>();
-            public List<Metadata> BeforeMethods { get; set; } = new List<Metadata>();
-            public List<Metadata> AfterMethods { get; set; } = new List<Metadata>();
+            public BlockingCollection<Metadata> BeforeMethods { get; set; } =
+                new BlockingCollection<Metadata>();
+            public BlockingCollection<Metadata> AfterMethods { get; set; } =
+                new BlockingCollection<Metadata>();
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace MyNUnit
+﻿using System;
+using System.Threading.Tasks;
+
+namespace MyNUnit
 {
     class Program
     {
@@ -9,5 +12,7 @@
 
             TestingSystem.RunTests(path);
         }
+
+        public static void A(int x) { Console.WriteLine(x); }
     }
 }
