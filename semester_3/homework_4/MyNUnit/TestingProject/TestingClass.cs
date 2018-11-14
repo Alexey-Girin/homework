@@ -23,7 +23,7 @@ namespace TestingProject
         [Test]
         public void TestMethod2()
         {
-            System.Threading.Thread.Sleep(1000);
+            System.Threading.Thread.Sleep(341);
         }
 
         [Test(Excepted = typeof(Exception), Ignore = "12345")]
@@ -35,6 +35,19 @@ namespace TestingProject
         [Test(Excepted = typeof(Exception))]
         public void TestMethod4()
         {
+        }
+
+        [Test]
+        public void TestMethod5()
+        {
+            for (int i =0; i < 100000; i++)
+            {
+                for (int j = 0; j < 100; j++)
+                {
+                    int a = 1;
+                    a = (int)Math.Asin(a * 1.1);
+                }
+            }
         }
 
         [BeforeClass]
@@ -70,7 +83,7 @@ namespace TestingProject
         [After]
         public void AfterMethod1()
         {
-            throw new Exception("12345");
+           // throw new Exception("12345");
         }
 
         [After]
