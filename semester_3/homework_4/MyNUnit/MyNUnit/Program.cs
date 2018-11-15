@@ -6,14 +6,15 @@
     {
         static void Main(string[] args)
         {
-            if (args.Length == 0)
-            {
-                Console.WriteLine("Путь не задан");
-                return;
-            }
-
+            //if (args.Length == 0)
+            //{
+            //    Console.WriteLine("Путь не задан");
+            //    Console.ReadKey();
+            //    return;
+            //}
+            string path = @"C:\Users\Алексей\Desktop\homework\semester_3\homework_4\MyNUnit\TestProjects\TestProject_1\bin\Debug";
             Console.WriteLine();
-            TestingSystem.RunTests(args[0]);
+            TestingSystem.RunTests(path);
 
             Console.ReadKey();
         }
