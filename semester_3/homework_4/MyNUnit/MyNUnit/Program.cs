@@ -12,10 +12,10 @@
             //    Console.ReadKey();
             //    return;
             //}
-            string path = @"C:\Users\Алексей\Desktop\homework\semester_3\homework_4\MyNUnit\TestProjects\TestProject_1\bin\Debug";
+
+            string path = @"C:\Users\Алексей\Desktop\homework\semester_3\homework_4\MyNUnit\TestProjects\TestProject_5\bin\Debug";
             Console.WriteLine();
             TestingSystem.RunTests(path);
-
             Console.ReadKey();
         }
     }

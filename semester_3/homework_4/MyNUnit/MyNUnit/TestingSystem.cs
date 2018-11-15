@@ -10,42 +10,22 @@ using System.Linq;
 
 namespace MyNUnit
 {
-    /// <summary>
-    /// Класс, выполняющий тесты во всех сборках, расположенных по заданному пути.
-    /// </summary>
     public static class TestingSystem
     {
-        public class TestCollections
+        private static List<TestMethodsInTypeExecutionInfo> TestsExecutionInfo;
+
+        private static object locker = new object();
+
+        public static List<TestMethodsInTypeExecutionInfo> RunTests(string path)
         {
-            public ConcurrentBag<string> TrueTestCollection { get; private set; } =
-               new ConcurrentBag<string>();
+            TestsExecutionInfo = new List<TestMethodsInTypeExecutionInfo>();
 
-            public ConcurrentBag<string> FalseTestCollection { get; private set; } =
-                new ConcurrentBag<string>();
-
-            public ConcurrentBag<string> IgnoreTestCollection { get; private set; } =
-                new ConcurrentBag<string>();
-
-            public ConcurrentBag<string> IndefiniteTestCollection { get; private set; } =
-                new ConcurrentBag<string>();
-        }
-
-        private static TestCollections testCollections = new TestCollections();
-
-        /// <summary>
-        /// Выполнение тестов во всех сборках, расположенных по заданному пути.
-        /// </summary>
-        /// <param name="path">Путь, по которому выполняется обход сборок.</param>
-        public static TestCollections RunTests(string path)
-        {
             AssembliesEnumeration(path);
-            return testCollections;
+
+            TestsExecutionInfo.Sort();
+            return TestsExecutionInfo;
         }
 
-        /// <summary>
-        /// Выполнение обхода сборок по заданному пути.
-        /// </summary>
-        /// <param name="path">Путь, по которому выполняется обход сборок.</param>
         private static void AssembliesEnumeration(string path)
         {
             string[] assemblyPaths_dll = null;
@@ -69,10 +49,6 @@ namespace MyNUnit
             }
         }
 
-        /// <summary>
-        /// Выполнение обхода открытых типов в заданной сборке.
-        /// </summary>
-        /// <param name="assemblyPath">Сборка, в которой выполняется обход типов.</param>
         private static void TypesEnumeration(string assemblyPath)
         {
             Assembly assembly = Assembly.LoadFile(assemblyPath);
@@ -112,7 +88,12 @@ namespace MyNUnit
             if (methods.TestMethods.Count != 0)
             {
                 Execution(methods);
-                DisplayTestResults(methods);
+                DisplayResults(methods);
+
+                var executionInfo = new TestMethodsInTypeExecutionInfo(instanceOfType, type);
+
+                SaveResults(methods, executionInfo);
+                TestsExecutionInfo.Add(executionInfo);
             }
         }
 
@@ -167,7 +148,7 @@ namespace MyNUnit
                 }
                 catch (Exception exception)
                 {
-                    methods.AuxiliaryMethodException = exception;
+                    ExceptionNotification(methods, exception);
                     return;
                 }
             }
@@ -182,7 +163,7 @@ namespace MyNUnit
                 }
                 catch (Exception exception)
                 {
-                    methods.AuxiliaryMethodException = exception;
+                    ExceptionNotification(methods, exception);
                 }
             }
         }
@@ -208,7 +189,7 @@ namespace MyNUnit
             }
             catch (Exception methodException)
             {
-                metadata.BeforeOrAfterMethodException = methodException;
+                metadata.AuxiliaryMethodException = methodException;
                 return;
             }
 
@@ -236,7 +217,7 @@ namespace MyNUnit
                     {
                         metadata.RunTime = stopwatch.ElapsedMilliseconds.ToString();
                         return;
-                    }                        
+                    }
                     return;
                 }
 
@@ -249,7 +230,7 @@ namespace MyNUnit
                 return;
             }
 
-            if (metadata.Attribute.Expected != null) 
+            if (metadata.Attribute.Expected != null)
             {
                 if (AfterMethodsExecution(metadata, methods))
                 {
@@ -273,7 +254,7 @@ namespace MyNUnit
             }
             catch (Exception methodException)
             {
-                metadata.BeforeOrAfterMethodException = methodException;
+                metadata.AuxiliaryMethodException = methodException;
                 return false;
             }
 
@@ -286,7 +267,10 @@ namespace MyNUnit
             {
                 try
                 {
-                    method.MethodInfo.Invoke(method.InstanceOfType, null);
+                    lock (locker)
+                    {
+                        method.MethodInfo.Invoke(method.InstanceOfType, null);
+                    }
                 }
                 catch (Exception)
                 {
@@ -295,89 +279,133 @@ namespace MyNUnit
             }
         }
 
-        private static void DisplayTestResults(Methods methods)
+        private static void DisplayResults(Methods methods)
         {
             foreach (var method in methods.TestMethods)
             {
-                Display(method, methods);
+                method.Display();
             }
         }
 
-        private static void Display(TestMetadata metadata, Methods methods)
+        private static void SaveResults(Methods methods, TestMethodsInTypeExecutionInfo executionInfo)
         {
-            if (methods.AuxiliaryMethodException != null)
+            foreach (var method in methods.TestMethods)
             {
-                DisplayIndefinite(metadata, methods.AuxiliaryMethodException);
-                testCollections.IndefiniteTestCollection.Add(GetFullNameOfMethod(metadata));
+                method.Save(executionInfo);
             }
-            else if (metadata.BeforeOrAfterMethodException != null)
-            {
-                DisplayIndefinite(metadata, metadata.BeforeOrAfterMethodException);
-                testCollections.IndefiniteTestCollection.Add(GetFullNameOfMethod(metadata));
-            }
-            else if (metadata.Attribute.Ignore != null)
-            {
-                DisplayIgnore(metadata);
-                testCollections.IgnoreTestCollection.Add(GetFullNameOfMethod(metadata));
-            }
-            else
-            {
-                DisplayTrueFalse(metadata);
-
-                if (metadata.TestException == null)
-                {
-                    testCollections.TrueTestCollection.Add(GetFullNameOfMethod(metadata));
-                    return;
-                }
-
-                testCollections.FalseTestCollection.Add(GetFullNameOfMethod(metadata));
-            }
-        }
-
-        private static void DisplayIndefinite(TestMetadata metadata, Exception exception)
-        {
-            Console.WriteLine("Result:\tIndefinite");
-            Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-            Console.WriteLine($"Reason:\tброшено исключение\n{exception.InnerException}\n");
-        }
-
-        private static void DisplayIgnore(TestMetadata metadata)
-        {
-            Console.WriteLine("Result:\tIgnore");
-            Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-            Console.WriteLine($"Reason:\t{metadata.Attribute.Ignore}\n");
-        }
-
-        private static void DisplayTrueFalse(TestMetadata metadata)
-        {
-            Console.WriteLine($"Result:\t{metadata.TestException == null}");
-            Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-
-            if (metadata.TestException != null)
-            {
-                Console.WriteLine(metadata.TestException);
-            }
-
-            Console.WriteLine($"Time:\t{metadata.RunTime} ms\n");
         }
 
         private static string GetFullNameOfMethod(Metadata metadata)
             => $"{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}";
 
+        private static void ExceptionNotification(Methods methods, Exception exception)
+        {
+            foreach (var test in methods.TestMethods)
+            {
+                test.AuxiliaryMethodException = exception;
+            }
+        }
+
         private class Metadata
         {
             public Type Type { get; set; }
-            public MethodInfo MethodInfo { get; set; }
             public object InstanceOfType { get; set; }
+            public MethodInfo MethodInfo { get; set; }
         }
 
         private class TestMetadata : Metadata
         {
-            public TestAttribute Attribute { get; set; }
-    
+            private TestAttribute attribute;
+            public TestAttribute Attribute
+            {
+                get
+                {
+                    return attribute;
+                }
+                set
+                {
+                    if (value.Ignore != null && auxiliaryMethodException == null)
+                    {
+                        status = new IgnoreTestStatus();
+                    }
+                    attribute = value;
+                }
+            }
+
             public string RunTime { get; set; }
             public Exception TestException { get; set; }
-            public Exception BeforeOrAfterMethodException { get; set; }
+
+            private Exception auxiliaryMethodException;
+            public Exception AuxiliaryMethodException
+            {
+                get
+                {
+                    return auxiliaryMethodException;
+                }
+                set
+                {
+                    status = new IndefiniteTestStatus();
+                    auxiliaryMethodException = value;
+                }
+            }
+
+            private DefaultTestStatus status = new DefaultTestStatus();
+
+            public void Display() => status.Display(this);
+            public void Save(TestMethodsInTypeExecutionInfo executionInfo) => status.Save(this, executionInfo);
+        }
+
+        private class DefaultTestStatus
+        {
+            public virtual void Display(TestMetadata metadata)
+            {
+                Console.WriteLine($"Result:\t{metadata.TestException == null}");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+
+                if (metadata.TestException != null)
+                {
+                    Console.WriteLine(metadata.TestException);
+                }
+
+                Console.WriteLine($"Time:\t{metadata.RunTime} ms\n");
+            }
+
+            public virtual void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+            {
+                if (metadata.TestException == null)
+                {
+                    executionInfo.TestsCountInfo.TrueTestCount++;
+                    return;
+                }
+
+                executionInfo.TestsCountInfo.FalseTestCount++;
+            }
+        }
+
+        private class IgnoreTestStatus : DefaultTestStatus
+        {
+            public override void Display(TestMetadata metadata)
+            {
+                Console.WriteLine("Result:\tIgnore");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                Console.WriteLine($"Reason:\t{metadata.Attribute.Ignore}\n");
+            }
+
+            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                => executionInfo.TestsCountInfo.IgnoreTestCount++;
+        }
+
+        private class IndefiniteTestStatus : DefaultTestStatus
+        {
+            public override void Display(TestMetadata metadata)
+            {
+                Console.WriteLine("Result:\tIndefinite");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                Console.WriteLine($"Reason:\tброшено исключение\n{metadata.AuxiliaryMethodException.InnerException}\n");
+            }
+
+            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                => executionInfo.TestsCountInfo.IndefiniteTestCount++;
         }
 
         private class Methods
@@ -387,8 +415,6 @@ namespace MyNUnit
             public List<Metadata> AfterClassMethods { get; set; } = new List<Metadata>();
             public ConcurrentBag<Metadata> BeforeMethods { get; set; } = new ConcurrentBag<Metadata>();
             public ConcurrentBag<Metadata> AfterMethods { get; set; } = new ConcurrentBag<Metadata>();
-
-            public Exception AuxiliaryMethodException { get; set; }
         }
     }
 }

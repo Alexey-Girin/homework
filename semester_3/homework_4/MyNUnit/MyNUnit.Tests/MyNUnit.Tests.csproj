@@ -64,6 +64,38 @@
       <Project>{90796324-1d88-428c-88e7-97764994588f}</Project>
       <Name>TestProject_1</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_2\TestProject_2.csproj">
+      <Project>{edbcffc4-d043-4f57-909a-63316b22d669}</Project>
+      <Name>TestProject_2</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_3\TestProject_3.csproj">
+      <Project>{465db81e-2163-4c86-97e5-7eca60aefc06}</Project>
+      <Name>TestProject_3</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_4\TestProject_4.csproj">
+      <Project>{c82bbf67-7704-46f3-b647-dcfb254e20a1}</Project>
+      <Name>TestProject_4</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_5\TestProject_5.csproj">
+      <Project>{776c8533-5ac4-442e-82fa-c29a3f80c63e}</Project>
+      <Name>TestProject_5</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_6\TestProject_6.csproj">
+      <Project>{bfc1b045-71e2-488b-ae3b-e9a909f45810}</Project>
+      <Name>TestProject_6</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_7\TestProject_7.csproj">
+      <Project>{62e436f6-f3db-4e00-b8ed-dbf60274191d}</Project>
+      <Name>TestProject_7</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_8\TestProject_8.csproj">
+      <Project>{572ab448-4bed-40e2-b464-a11fc28a6c0d}</Project>
+      <Name>TestProject_8</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestProjects\TestProject_9\TestProject_9.csproj">
+      <Project>{7c93bda6-1088-4042-b76c-64a3ab1b9efd}</Project>
+      <Name>TestProject_9</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
