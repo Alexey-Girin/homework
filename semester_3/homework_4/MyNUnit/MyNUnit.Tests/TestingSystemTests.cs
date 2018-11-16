@@ -16,6 +16,13 @@ namespace MyNUnit.Tests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(PathErrorException))]
+        public void TestingSystemShouldThrowExceptionWithIncorrectPath()
+        {
+            TestingSystem.RunTests(" ");
+        }
+
+        [TestMethod]
         public void TestingSystemShouldTestAllTestMethods()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_1\bin\Debug";
@@ -99,6 +106,19 @@ namespace MyNUnit.Tests
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_9\bin\Debug";
             CheckTestingSystemWithAuxiliaryMethods(path);
+        }
+
+        [TestMethod]
+        public void TestingSystemShouldNotNoticeMethodsWithInappropriateAttributes()
+        {
+            var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_Attribute\bin\Debug";
+            var resultList = TestingSystem.RunTests(path);
+
+            Assert.AreEqual(1, resultList.Count);
+            CheckTestCount(2, 0, 0, 0, resultList[0].TestsCountInfo);
+
+            Assert.IsTrue((bool)resultList[0].Type.GetProperty("MethodExecutionCheck")
+                .GetValue(resultList[0].InstanceOfType));
         }
 
         private static string GetTestProjectsPath()
