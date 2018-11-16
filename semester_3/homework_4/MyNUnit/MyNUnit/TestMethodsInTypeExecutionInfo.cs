@@ -24,7 +24,7 @@ namespace MyNUnit
         public TestMethodsCountInfo TestsCountInfo { get; set; } = new TestMethodsCountInfo();
 
         /// <summary>
-        /// Объект типа, в котором выполнялись тесты.
+        /// Объект типа <see cref="Type"/>, в котором выполнялись тесты.
         /// </summary>
         public object InstanceOfType { get; }
 
