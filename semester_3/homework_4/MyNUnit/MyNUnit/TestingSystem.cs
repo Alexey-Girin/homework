@@ -350,9 +350,15 @@ namespace MyNUnit
 
             /// <summary>
             /// Объект, необходимый для синхронизации тестовых потоков при выполнении вспомогательных
-            /// методов с <see cref="AfterAttribute"/> или <see cref="BeforeAttribute"/>.
+            /// методов с <see cref="BeforeAttribute"/>.
             /// </summary>
-            public object Locker { get; set; } = new object();
+            public object BeforeLocker { get; set; } = new object();
+
+            /// <summary>
+            /// Объект, необходимый для синхронизации тестовых потоков при выполнении вспомогательных
+            /// методов с <see cref="AfterAttribute"/>.
+            /// </summary>
+            public object AfterLocker { get; set; } = new object();
 
             /// <summary>
             /// Тип, содержащий тестовые методы.
@@ -483,7 +489,7 @@ namespace MyNUnit
             {
                 try
                 {
-                    lock (Locker)
+                    lock (BeforeLocker)
                     {
                         MethodsExecution(BeforeMethods);
                     }
@@ -556,9 +562,9 @@ namespace MyNUnit
             {
                 try
                 {
-                    lock (metadata.Methods.Locker)
+                    lock (AfterLocker)
                     {
-                        MethodsExecution(metadata.Methods.AfterMethods);
+                        MethodsExecution(AfterMethods);
                     }
                 }
                 catch (Exception methodException)
