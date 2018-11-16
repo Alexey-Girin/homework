@@ -455,71 +455,71 @@ namespace MyNUnit
             /// <param name="executionInfo"></param>
             public void Save(TestMethodsInTypeExecutionInfo executionInfo)
                 => status.Save(this, executionInfo);
-        }
-
-        /// <summary>
-        /// Статус тестового метода с результатом выполнения True или False.
-        /// </summary>
-        private class DefaultTestStatus
-        {
-            public virtual void Display(TestMetadata metadata)
+            
+            /// <summary>
+            /// Статус тестового метода с результатом выполнения True или False.
+            /// </summary>
+            private class DefaultTestStatus
             {
-                Console.WriteLine($"Result:\t{metadata.TestException == null}");
-                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-
-                if (metadata.TestException != null)
+                public virtual void Display(TestMetadata metadata)
                 {
-                    Console.WriteLine(metadata.TestException);
+                    Console.WriteLine($"Result:\t{metadata.TestException == null}");
+                    Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+
+                    if (metadata.TestException != null)
+                    {
+                        Console.WriteLine(metadata.TestException);
+                    }
+
+                    Console.WriteLine($"Time:\t{metadata.RunTime} ms\n");
                 }
 
-                Console.WriteLine($"Time:\t{metadata.RunTime} ms\n");
-            }
-
-            public virtual void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
-            {
-                if (metadata.TestException == null)
+                public virtual void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
                 {
-                    executionInfo.TestsCountInfo.TrueTestCount++;
-                    return;
+                    if (metadata.TestException == null)
+                    {
+                        executionInfo.TestsCountInfo.TrueTestCount++;
+                        return;
+                    }
+
+                    executionInfo.TestsCountInfo.FalseTestCount++;
                 }
 
-                executionInfo.TestsCountInfo.FalseTestCount++;
+                public static string GetFullNameOfMethod(Metadata metadata)
+                    => $"{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}";
             }
 
-            public static string GetFullNameOfMethod(Metadata metadata)
-                => $"{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}";
-        }
-
-        /// <summary>
-        /// Статус тестового метода с результатом выполнения Ignore.
-        /// </summary>
-        private class IgnoreTestStatus : DefaultTestStatus
-        {
-            public override void Display(TestMetadata metadata)
+            /// <summary>
+            /// Статус тестового метода с результатом выполнения Ignore.
+            /// </summary>
+            private class IgnoreTestStatus : DefaultTestStatus
             {
-                Console.WriteLine("Result:\tIgnore");
-                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-                Console.WriteLine($"Reason:\t{metadata.Attribute.Ignore}\n");
+                public override void Display(TestMetadata metadata)
+                {
+                    Console.WriteLine("Result:\tIgnore");
+                    Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                    Console.WriteLine($"Reason:\t{metadata.Attribute.Ignore}\n");
+                }
+
+                public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                    => executionInfo.TestsCountInfo.IgnoreTestCount++;
             }
 
-            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
-                => executionInfo.TestsCountInfo.IgnoreTestCount++;
-        }
-
-        /// <summary>
-        /// Статус тестового метода с результатом выполнения Indefinite.
-        /// </summary>
-        private class IndefiniteTestStatus : DefaultTestStatus
-        {
-            public override void Display(TestMetadata metadata)
+            /// <summary>
+            /// Статус тестового метода с результатом выполнения Indefinite.
+            /// </summary>
+            private class IndefiniteTestStatus : DefaultTestStatus
             {
-                Console.WriteLine("Result:\tIndefinite");
-                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
-                Console.WriteLine($"Reason:\tброшено исключение\n{metadata.AuxiliaryMethodException.InnerException}\n");
-            }
+                public override void Display(TestMetadata metadata)
+                {
+                    Console.WriteLine("Result:\tIndefinite");
+                    Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                    Console.WriteLine($"Reason:\tброшено исключение\n{metadata.AuxiliaryMethodException.InnerException}\n");
+                }
 
-            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
-                => executionInfo.TestsCountInfo.IndefiniteTestCount++;
+                public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                    => executionInfo.TestsCountInfo.IndefiniteTestCount++;
+            }
         }
 
         /// <summary>
