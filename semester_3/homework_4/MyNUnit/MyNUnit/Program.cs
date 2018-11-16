@@ -9,12 +9,12 @@
             if (args.Length == 0)
             {
                 Console.WriteLine("Путь не задан");
+                Console.ReadKey();
                 return;
             }
 
             Console.WriteLine();
             TestingSystem.RunTests(args[0]);
-
             Console.ReadKey();
         }
     }

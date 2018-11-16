@@ -6,6 +6,7 @@ using MyNUnit.Exceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Linq;
 
 namespace MyNUnit
 {
@@ -15,16 +16,24 @@ namespace MyNUnit
     public static class TestingSystem
     {
         /// <summary>
-        /// Объект, необходимый для синхронизации потоков при выводе информации.
+        /// Коллекция, содержащая информацию о результатах выполнения тестов для каждого типа.
         /// </summary>
-        private static object displayLocker = new object();
+        private static List<TestMethodsInTypeExecutionInfo> TestsExecutionInfo;
 
         /// <summary>
         /// Выполнение тестов во всех сборках, расположенных по заданному пути.
         /// </summary>
         /// <param name="path">Путь, по которому выполняется обход сборок.</param>
-        public static void RunTests(string path)
-            => AssembliesEnumeration(path);
+        /// <returns></returns>
+        public static List<TestMethodsInTypeExecutionInfo> RunTests(string path)
+        {
+            TestsExecutionInfo = new List<TestMethodsInTypeExecutionInfo>();
+
+            AssembliesEnumeration(path);
+
+            TestsExecutionInfo.Sort();
+            return TestsExecutionInfo;
+        }
 
         /// <summary>
         /// Выполнение обхода сборок по заданному пути.
@@ -32,17 +41,20 @@ namespace MyNUnit
         /// <param name="path">Путь, по которому выполняется обход сборок.</param>
         private static void AssembliesEnumeration(string path)
         {
-            string[] assemblyPaths = null;
+            string[] assemblyPaths_dll = null;
+            string[] assemblyPaths_exe = null;
 
             try
             {
-                assemblyPaths = Directory.GetFiles(path, "*.exe");
+                assemblyPaths_dll = Directory.GetFiles(path, "*.dll");
+                assemblyPaths_exe = Directory.GetFiles(path, "*.exe");
             }
             catch (Exception)
             {
-                Console.WriteLine("Ошибка. Путь имеет недопустимую форму");
-                return;
+                throw new PathErrorException();
             }
+
+            var assemblyPaths = assemblyPaths_dll.Concat(assemblyPaths_exe).ToArray();
 
             foreach (var assemblyPath in assemblyPaths)
             {
@@ -56,12 +68,16 @@ namespace MyNUnit
         /// <param name="assemblyPath">Сборка, в которой выполняется обход типов.</param>
         private static void TypesEnumeration(string assemblyPath)
         {
-            Assembly assembly = Assembly.LoadFile(assemblyPath);
+            Type[] types = Assembly.LoadFile(assemblyPath).GetExportedTypes();
+            Task[] tasks = new Task[types.Length];
 
-            foreach (var type in assembly.GetExportedTypes())
+            for (int i = 0; i < tasks.Length; i++)
             {
-                MethodsEnumeration(type);
+                int j = i;
+                tasks[j] = Task.Factory.StartNew(() => MethodsEnumeration(types[j]));
             }
+
+            Task.WaitAll(tasks);
         }
 
         /// <summary>
@@ -94,66 +110,26 @@ namespace MyNUnit
                 AttributesEnumeration(metadata, methods);
             }
 
-            Execution(methods);
-        }
-
-        /// <summary>
-        /// Выполнение вспомогательных методов, тестовых методов, 
-        /// вывод информации о результатах выполнения тестов.
-        /// </summary>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
-        private static void Execution(Methods methods)
-        {
             if (methods.TestMethods.Count == 0)
             {
                 return;
             }
 
-            if (methods.BeforeClassMethods.Count != 0)
-            {
-                try
-                {
-                    MethodsExecution(methods.BeforeClassMethods);
-                }
-                catch (Exception exception)
-                {
-                    DisplayAfterClassOrBeforeClassMethodError(methods, exception);
-                    return;
-                }
-            }
+            Execution(methods);
+            DisplayResults(methods);
 
-            Action[] displayTestResults = TestsExecution(methods);
+            var executionInfo = new TestMethodsInTypeExecutionInfo(instanceOfType, type);
 
-            if (displayTestResults == null)
-            {
-                return;
-            }
-
-            if (methods.AfterClassMethods.Count != 0)
-            {
-                try
-                {
-                    MethodsExecution(methods.AfterClassMethods);
-                }
-                catch (Exception exception)
-                {
-                    DisplayAfterClassOrBeforeClassMethodError(methods, exception);
-                    return;
-                }
-            }
-
-            foreach (var displayTestResult in displayTestResults)
-            {
-                displayTestResult();
-            }
+            SaveResults(methods, executionInfo);
+            TestsExecutionInfo.Add(executionInfo);
         }
 
         /// <summary>
-        /// Обзор атрибутов метода, добавление информации о методе в соответсвующий класс в 
-        /// <see cref="Methods"/>.
+        /// Обзор атрибутов метода, добавление информации о методе в соответствующую  
+        /// коллекцию в <see cref="Methods"/>.
         /// </summary>
         /// <param name="metadata">Информация о методе.</param>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
         private static void AttributesEnumeration(Metadata metadata, Methods methods)
         {
             foreach (var attribute in Attribute.GetCustomAttributes(metadata.MethodInfo))
@@ -167,7 +143,7 @@ namespace MyNUnit
                         Type = metadata.Type,
                         MethodInfo = metadata.MethodInfo,
                         InstanceOfType = metadata.InstanceOfType,
-                        Attribute = attribute
+                        Attribute = attribute as TestAttribute
                     });
                 }
                 else if (attributType == typeof(BeforeClassAttribute))
@@ -196,14 +172,59 @@ namespace MyNUnit
         }
 
         /// <summary>
+        /// Поэтапное выполнение вспомогательных и тестовых методов.
+        /// </summary>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        private static void Execution(Methods methods)
+        {
+            if (methods.BeforeClassMethods.Count != 0)
+            {
+                try
+                {
+                    MethodsExecution(methods.BeforeClassMethods);
+                }
+                catch (Exception exception)
+                {
+                    ExceptionNotification(methods, exception);
+                    return;
+                }
+            }
+
+            TestsExecution(methods);
+
+            if (methods.AfterClassMethods.Count != 0)
+            {
+                try
+                {
+                    MethodsExecution(methods.AfterClassMethods);
+                }
+                catch (Exception exception)
+                {
+                    ExceptionNotification(methods, exception);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Уведомление тестовых методов об исключении, пойманном при выполнении вспомогательного метода.
+        /// </summary>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        /// <param name="exception">Пойманное исключение.</param>
+        private static void ExceptionNotification(Methods methods, Exception exception)
+        {
+            foreach (var test in methods.TestMethods)
+            {
+                test.AuxiliaryMethodException = exception;
+            }
+        }
+
+        /// <summary>
         /// Параллельное выполнение тестов.
         /// </summary>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
-        /// <returns>Массив действий - вывод информации о тестах.
-        /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
-        private static Action[] TestsExecution(Methods methods)
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        private static void TestsExecution(Methods methods)
         {
-            Task<Action>[] tasks = new Task<Action>[methods.TestMethods.Count];
+            Task[] tasks = new Task[methods.TestMethods.Count];
 
             for (int i = 0; i < methods.TestMethods.Count; i++)
             {
@@ -212,52 +233,34 @@ namespace MyNUnit
             }
 
             Task.WaitAll(tasks);
-
-            if (tasks[0].Result == null)
-            {
-                return null;
-            }
-
-            Action[] results = new Action[tasks.Length];
-
-            for (int i = 0; i < tasks.Length; i++)
-            {
-                results[i] = tasks[i].Result;
-            }
-
-            return results;
         }
 
         /// <summary>
         /// Выполнение теста.
         /// </summary>
         /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
-        /// <returns>Действие - вывод информации о тесте. 
-        /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
-        private static Action TestExecution(TestMetadata metadata, Methods methods)
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        private static void TestExecution(TestMetadata metadata, Methods methods)
         {
             try
             {
-                MethodsExecution(methods.BeforeMethods);
+                lock (methods.Locker)
+                {
+                    MethodsExecution(methods.BeforeMethods);
+                }
             }
             catch (Exception methodException)
             {
-                lock (displayLocker)
-                {
-                    DisplayMethodError(metadata, methodException);
-                }
-
-                return null;
+                metadata.AuxiliaryMethodException = methodException;
+                return;
             }
 
-            if ((metadata.Attribute as TestAttribute).Ignore != null)
+            if (metadata.Attribute.Ignore != null)
             {
-                return FinishTestExecution(() => DisplayReasonForIgnoring(metadata), metadata, methods);
+                AfterMethodsExecution(metadata, methods);
+                return;
             }
 
-            Exception exception = null;
-            bool isCatchException = false;
             var stopwatch = new Stopwatch();
 
             try
@@ -266,108 +269,73 @@ namespace MyNUnit
                 metadata.MethodInfo.Invoke(metadata.InstanceOfType, null);
                 stopwatch.Stop();
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
                 stopwatch.Stop();
-                isCatchException = true;
 
-                if (e.InnerException.GetType() !=
-                    (metadata.Attribute as TestAttribute).Excepted)
+                if (exception.InnerException.GetType() == metadata.Attribute.Expected)
                 {
-                    exception = e;
+                    if (AfterMethodsExecution(metadata, methods))
+                    {
+                        metadata.RunTime = stopwatch.ElapsedMilliseconds.ToString();
+                        return;
+                    }
+                    return;
                 }
+
+                if (AfterMethodsExecution(metadata, methods))
+                {
+                    metadata.TestException = exception.InnerException;
+                    metadata.RunTime = stopwatch.ElapsedMilliseconds.ToString();
+                    return;
+                }
+                return;
             }
 
-            if (exception == null && (metadata.Attribute as TestAttribute).Excepted != null &&
-                !isCatchException)
+            if (metadata.Attribute.Expected != null)
             {
-                exception = new ExpectedExceptionWasNotThrown();
+                if (AfterMethodsExecution(metadata, methods))
+                {
+                    metadata.TestException = new ExpectedExceptionWasNotThrown();
+                    metadata.RunTime = stopwatch.ElapsedMilliseconds.ToString();
+                }
+                return;
             }
 
-            return FinishTestExecution(() => DisplayTestResult(metadata, exception, stopwatch),
-                metadata, methods);
+            if (AfterMethodsExecution(metadata, methods))
+            {
+                metadata.RunTime = stopwatch.ElapsedMilliseconds.ToString();
+            }
         }
 
         /// <summary>
-        /// Завершение выполнения теста.
+        /// Выполнение вспомогательных методов с атрибутом <see cref="AfterAttribute"/>.
         /// </summary>
-        /// <param name="result">Результат выполнения теста.</param>
         /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
-        /// <returns>Действие - вывод информации о тесте. 
-        /// null, если каким-либо вспомогательным методом было брошено исключение.</returns>
-        private static Action FinishTestExecution(Action displayTestResult, TestMetadata metadata,
-            Methods methods)
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        /// <returns>True, если выполнение прошло успешно.</returns>
+        private static bool AfterMethodsExecution(TestMetadata metadata, Methods methods)
         {
             try
             {
-                MethodsExecution(methods.AfterMethods);
+                lock (methods.Locker)
+                {
+                    MethodsExecution(methods.AfterMethods);
+                }
             }
             catch (Exception methodException)
             {
-                lock (displayLocker)
-                {
-                    DisplayMethodError(metadata, methodException);
-                }
-
-                return null;
+                metadata.AuxiliaryMethodException = methodException;
+                return false;
             }
 
-            return displayTestResult;
-        }
-
-        /// <summary>
-        /// Вывод информации об отмененном тесте и причины отмены.
-        /// </summary>
-        /// <param name="metadata">Информация о тестовом методе.</param>
-        private static void DisplayReasonForIgnoring(TestMetadata metadata)
-        {
-            Console.WriteLine("Result:\tIgnore");
-            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
-                $"{metadata.MethodInfo.Name}");
-            Console.WriteLine($"Reason:\t{(metadata.Attribute as TestAttribute).Ignore}\n");
-        }
-
-        /// <summary>
-        /// Вывод результата и времени выполнения теста.
-        /// </summary>
-        /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="exception">Возможное исключение, брошенное при выполнении теста.</param>
-        /// <param name="testRunTime">Время выполнения теста.</param>
-        private static void DisplayTestResult(TestMetadata metadata, Exception exception,
-            Stopwatch testRunTime)
-        {
-            Console.WriteLine($"Result:\t{exception == null}");
-            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
-                $"{metadata.MethodInfo.Name}");
-
-            if (exception != null)
-            {
-                Console.WriteLine(exception.GetType() == typeof(ExpectedExceptionWasNotThrown) ?
-                    exception : exception.InnerException);
-            }
-
-            Console.WriteLine($"Time:\t{testRunTime.ElapsedMilliseconds} ms\n");
-        }
-
-        /// <summary>
-        /// Вывод информации о тесте, в случае если каким-либо вспомогательным методом было брошено исключение.
-        /// </summary>
-        /// <param name="metadata">Информация о тестовом методе.</param>
-        /// <param name="exception">Брошенное исключение.</param>
-        private static void DisplayMethodError(TestMetadata metadata, Exception exception)
-        {
-            Console.WriteLine("Result:\tIndefinite");
-            Console.WriteLine($"Test:\t{metadata.Type.Namespace}.{metadata.Type.Name}." +
-                $"{metadata.MethodInfo.Name}");
-            Console.WriteLine($"Reason:{exception.InnerException.StackTrace} было брошено исключение");
-            Console.WriteLine($"{exception.InnerException.GetType()}: {exception.InnerException.Message}\n");
+            return true;
         }
 
         /// <summary>
         /// Выполнение вспомогательных методов.
         /// </summary>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
         private static void MethodsExecution(IEnumerable<Metadata> methods)
         {
             foreach (var method in methods)
@@ -384,16 +352,29 @@ namespace MyNUnit
         }
 
         /// <summary>
-        /// Вывод информации о тестах, в случае если каким-либо методом с 
-        /// <see cref="AfterClassAttribute"/> или <see cref="BeforeClassAttribute"/> было брошено исключение.
+        /// Вывод отчета о выполнении тестов.
         /// </summary>
-        /// <param name="methods">Коллекции данных, содержащих информацию о методах.</param>
-        /// <param name="exception">Брошенное исключение.</param>
-        private static void DisplayAfterClassOrBeforeClassMethodError(Methods methods, Exception exception)
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        private static void DisplayResults(Methods methods)
         {
-            foreach (var test in methods.TestMethods)
+            foreach (var method in methods.TestMethods)
             {
-                DisplayMethodError(test, exception);
+                method.Display();
+            }
+        }
+
+        /// <summary>
+        /// Добавление информации о результатах выполнения тестовых методов текущего типа в 
+        /// <see cref="TestMethodsInTypeExecutionInfo"/>.
+        /// </summary>
+        /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
+        /// <param name="executionInfo">Экземляр <see cref="TestMethodsInTypeExecutionInfo"/>
+        /// для текущего типа.</param>
+        private static void SaveResults(Methods methods, TestMethodsInTypeExecutionInfo executionInfo)
+        {
+            foreach (var method in methods.TestMethods)
+            {
+                method.Save(executionInfo);
             }
         }
 
@@ -403,8 +384,8 @@ namespace MyNUnit
         private class Metadata
         {
             public Type Type { get; set; }
-            public MethodInfo MethodInfo { get; set; }
             public object InstanceOfType { get; set; }
+            public MethodInfo MethodInfo { get; set; }
         }
 
         /// <summary>
@@ -412,21 +393,170 @@ namespace MyNUnit
         /// </summary>
         private class TestMetadata : Metadata
         {
-            public Attribute Attribute { get; set; }
+            private TestAttribute attribute;
+
+            /// <summary>
+            /// Атрибут метода.
+            /// </summary>
+            public TestAttribute Attribute
+            {
+                get
+                {
+                    return attribute;
+                }
+                set
+                {
+                    if (value.Ignore != null && auxiliaryMethodException == null)
+                    {
+                        status = new IgnoreTestStatus();
+                    }
+                    attribute = value;
+                }
+            }
+
+            /// <summary>
+            /// Время выполнения метода.
+            /// </summary>
+            public string RunTime { get; set; }
+
+            /// <summary>
+            /// Возможное исключение.
+            /// </summary>
+            public Exception TestException { get; set; }
+
+            private Exception auxiliaryMethodException;
+
+            /// <summary>
+            /// Возможное исключение вспомогательного метода.
+            /// </summary>
+            public Exception AuxiliaryMethodException
+            {
+                get
+                {
+                    return auxiliaryMethodException;
+                }
+                set
+                {
+                    status = new IndefiniteTestStatus();
+                    auxiliaryMethodException = value;
+                }
+            }
+
+            private DefaultTestStatus status = new DefaultTestStatus();
+
+            /// <summary>
+            /// Вывод отчета о выполнении теста.
+            /// </summary>
+            public void Display() => status.Display(this);
+
+            /// <summary>
+            /// Добавление инофрмации о результате выполнения теста.
+            /// </summary>
+            /// <param name="executionInfo"></param>
+            public void Save(TestMethodsInTypeExecutionInfo executionInfo)
+                => status.Save(this, executionInfo);
         }
 
         /// <summary>
-        /// Классификация данных, содержащих информацию о методах, по соответствующим атрибутам.
+        /// Статус тестового метода с результатом выполнения True или False.
+        /// </summary>
+        private class DefaultTestStatus
+        {
+            public virtual void Display(TestMetadata metadata)
+            {
+                Console.WriteLine($"Result:\t{metadata.TestException == null}");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+
+                if (metadata.TestException != null)
+                {
+                    Console.WriteLine(metadata.TestException);
+                }
+
+                Console.WriteLine($"Time:\t{metadata.RunTime} ms\n");
+            }
+
+            public virtual void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+            {
+                if (metadata.TestException == null)
+                {
+                    executionInfo.TestsCountInfo.TrueTestCount++;
+                    return;
+                }
+
+                executionInfo.TestsCountInfo.FalseTestCount++;
+            }
+
+            public static string GetFullNameOfMethod(Metadata metadata)
+                => $"{metadata.Type.Namespace}.{metadata.Type.Name}.{metadata.MethodInfo.Name}";
+        }
+
+        /// <summary>
+        /// Статус тестового метода с результатом выполнения Ignore.
+        /// </summary>
+        private class IgnoreTestStatus : DefaultTestStatus
+        {
+            public override void Display(TestMetadata metadata)
+            {
+                Console.WriteLine("Result:\tIgnore");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                Console.WriteLine($"Reason:\t{metadata.Attribute.Ignore}\n");
+            }
+
+            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                => executionInfo.TestsCountInfo.IgnoreTestCount++;
+        }
+
+        /// <summary>
+        /// Статус тестового метода с результатом выполнения Indefinite.
+        /// </summary>
+        private class IndefiniteTestStatus : DefaultTestStatus
+        {
+            public override void Display(TestMetadata metadata)
+            {
+                Console.WriteLine("Result:\tIndefinite");
+                Console.WriteLine($"Test:\t{GetFullNameOfMethod(metadata)}");
+                Console.WriteLine($"Reason:\tброшено исключение\n{metadata.AuxiliaryMethodException.InnerException}\n");
+            }
+
+            public override void Save(TestMetadata metadata, TestMethodsInTypeExecutionInfo executionInfo)
+                => executionInfo.TestsCountInfo.IndefiniteTestCount++;
+        }
+
+        /// <summary>
+        /// Классификация данных, содержащих информацию о методах типа, по соответствующим атрибутам.
         /// </summary>
         private class Methods
         {
+            /// <summary>
+            /// Коллекция тестовых методов некоторого типа.
+            /// </summary>
             public List<TestMetadata> TestMethods { get; set; } = new List<TestMetadata>();
+
+            /// <summary>
+            /// Коллекция вспомогательных методов с <see cref="BeforeClassAttribute"/> некоторого типа.
+            /// </summary>
             public List<Metadata> BeforeClassMethods { get; set; } = new List<Metadata>();
+
+            /// <summary>
+            /// Коллекция вспомогательных методов с <see cref="AfterClassAttribute"/> некоторого типа.
+            /// </summary>
             public List<Metadata> AfterClassMethods { get; set; } = new List<Metadata>();
-            public BlockingCollection<Metadata> BeforeMethods { get; set; } =
-                new BlockingCollection<Metadata>();
-            public BlockingCollection<Metadata> AfterMethods { get; set; } =
-                new BlockingCollection<Metadata>();
+
+            /// <summary>
+            /// Коллекция вспомогательных методов с <see cref="BeforeAttribute"/> некоторого типа.
+            /// </summary>
+            public ConcurrentBag<Metadata> BeforeMethods { get; set; } = new ConcurrentBag<Metadata>();
+
+            /// <summary>
+            /// Коллекция вспомогательных методов с <see cref="AfterAttribute"/> некоторого типа.
+            /// </summary>
+            public ConcurrentBag<Metadata> AfterMethods { get; set; } = new ConcurrentBag<Metadata>();
+
+            /// <summary>
+            /// Объект, необходимый для синхронизации тестовых потоков при выполнении вспомогательных
+            /// методов с <see cref="AfterAttribute"/> или <see cref="BeforeAttribute"/>.
+            /// </summary>
+            public object Locker { get; set; } = new object();
         }
     }
 }

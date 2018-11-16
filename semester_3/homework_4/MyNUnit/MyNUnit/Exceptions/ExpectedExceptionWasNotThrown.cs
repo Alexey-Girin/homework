@@ -7,6 +7,6 @@ namespace MyNUnit.Exceptions
     /// </summary>
     public class ExpectedExceptionWasNotThrown : Exception
     {
-        public override string Message { get; } = "ожидаемое исключение не было брошено";
+        public override string Message { get; } = "Ожидаемое исключение не было брошено";
     }
 }
