@@ -1,5 +1,5 @@
 image: Visual Studio 2017 
-branches:
+branches: 
   only:
     - homework-3.4
 before_build:
