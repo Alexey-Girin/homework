@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyNUnit.Exceptions;
-using TestProject_1;
 
 namespace MyNUnit.Tests
 {

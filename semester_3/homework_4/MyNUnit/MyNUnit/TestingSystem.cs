@@ -21,6 +21,12 @@ namespace MyNUnit
         private static List<TestMethodsInTypeExecutionInfo> TestsExecutionInfo;
 
         /// <summary>
+        /// Объект, необходимый для синхронизации потоков при добавлении результатов выполнения
+        /// тестовых методов некоторого класса.
+        /// </summary>
+        private static object saveLocker = new object();
+
+        /// <summary>
         /// Выполнение тестов во всех сборках, расположенных по заданному пути.
         /// </summary>
         /// <param name="path">Путь, по которому выполняется обход сборок.</param>
@@ -123,7 +129,10 @@ namespace MyNUnit
             methods.Execution();
             methods.DisplayResults();
 
-            TestsExecutionInfo.Add(methods.SaveResults());
+            lock (saveLocker)
+            {
+                TestsExecutionInfo.Add(methods.SaveResults());
+            }
         }
 
         /// <summary>
