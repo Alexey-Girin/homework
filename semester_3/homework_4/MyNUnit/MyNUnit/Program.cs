@@ -14,7 +14,7 @@
             }
 
             Console.WriteLine();
-            TestingSystem.RunTests(args[0]);
+            TestingSystem.Launch(args[0]);
             Console.ReadKey();
         }
     }

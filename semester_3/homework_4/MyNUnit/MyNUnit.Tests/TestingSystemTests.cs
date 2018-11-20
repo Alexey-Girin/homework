@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyNUnit.Exceptions;
+using MyNUnit.SupportingClasses;
+using System;
 
 namespace MyNUnit.Tests
 {
@@ -11,138 +13,205 @@ namespace MyNUnit.Tests
         [ExpectedException(typeof(PathErrorException))]
         public void TestingSystemShouldThrowExceptionWithNullPath()
         {
-            TestingSystem.RunTests(null);
+            TestingSystem.Launch(null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(PathErrorException))]
         public void TestingSystemShouldThrowExceptionWithIncorrectPath()
         {
-            TestingSystem.RunTests(" ");
+            TestingSystem.Launch(" ");
         }
 
         [TestMethod]
-        public void TestingSystemShouldTestAllTestMethods()
+        public void TestingSystemShouldTestAllTests()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_1\bin\Debug";
-            var testsExecutionInfo = TestingSystem.RunTests(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(1, testsExecutionInfo.Count);
-            CheckTestCount(3, 0, 0, 0, testsExecutionInfo[0].TestsCountInfo);
+            CheckTestCount(trueTestCount: 2, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 0, 
+                testsExecutionInfo: testsExecutionInfo);
 
-            Assert.IsTrue((bool)testsExecutionInfo[0].Type.GetProperty("MethodExecutionCheck")
-                .GetValue(testsExecutionInfo[0].InstanceOfType));
+            CheckTrueTest(testsExecutionInfo.TrueTests[0], "TestProject_1.TestClass.TrueTest0");
+            CheckTrueTest(testsExecutionInfo.TrueTests[1], "TestProject_1.TestClass.TrueTest1");
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithFalseTestMethods()
+        public void CheckTestingSystemWithFalseTests()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_2\bin\Debug";
-            var resultList = TestingSystem.RunTests(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(1, resultList.Count);
-            CheckTestCount(1, 1, 0, 0, resultList[0].TestsCountInfo);
+            CheckTestCount(trueTestCount: 1, falseTestCount: 3, ignoreTestCount: 0, indefiniteTestCount: 0,
+                testsExecutionInfo: testsExecutionInfo);
+
+            CheckFalseTest(testsExecutionInfo.FalseTests[0], "TestProject_2.TestClass.FalseTest0",
+                typeof(AggregateException));
+            CheckFalseTest(testsExecutionInfo.FalseTests[1], "TestProject_2.TestClass.FalseTest1",
+                typeof(ExpectedExceptionWasNotThrown));
+            CheckFalseTest(testsExecutionInfo.FalseTests[2], "TestProject_2.TestClass.FalseTest2",
+                typeof(ExpectedExceptionWasNotThrown));
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithIgnoreTestMethods()
+        public void CheckTestingSystemWithIgnoreTests()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_3\bin\Debug";
-            var resultList = TestingSystem.RunTests(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(1, resultList.Count);
-            CheckTestCount(1, 0, 2, 0, resultList[0].TestsCountInfo);
+            CheckTestCount(trueTestCount: 1, falseTestCount: 0, ignoreTestCount: 2, indefiniteTestCount: 0,
+                testsExecutionInfo: testsExecutionInfo);
 
-            Assert.IsTrue((bool)resultList[0].Type.GetProperty("MethodExecutionCheck")
-                .GetValue(resultList[0].InstanceOfType));
+            CheckIgnoreTest(testsExecutionInfo.IgnoreTests[0], "TestProject_3.TestClass.IgnoreTest0",
+                "reason0");
+            CheckIgnoreTest(testsExecutionInfo.IgnoreTests[1], "TestProject_3.TestClass.IgnoreTest1",
+                "reason1");
         }
 
         [TestMethod]
         public void CheckTestingSystemWithWithSeveralTypes()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_4\bin\Debug";
-            var resultList = TestingSystem.RunTests(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(2, resultList.Count);
-            CheckTestCount(1, 1, 1, 0, resultList[0].TestsCountInfo);
-            CheckTestCount(2, 2, 2, 0, resultList[1].TestsCountInfo);
+            CheckTestCount(trueTestCount: 2, falseTestCount: 2, ignoreTestCount: 0, indefiniteTestCount: 0,
+                testsExecutionInfo: testsExecutionInfo);
+
+            CheckTrueTest(testsExecutionInfo.TrueTests[0], "TestProject_4.TestClass0.TrueTest0");
+            CheckTrueTest(testsExecutionInfo.TrueTests[1], "TestProject_4.TestClass1.TrueTest1");
+            CheckFalseTest(testsExecutionInfo.FalseTests[0], "TestProject_4.TestClass0.FalseTest0",
+                typeof(Exception));
+            CheckFalseTest(testsExecutionInfo.FalseTests[1], "TestProject_4.TestClass1.FalseTest1",
+                typeof(Exception));
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithExpectedExceptionTestMethods()
+        public void CheckTestingSystemWithBeforeAndBeforeClassMethods()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_5\bin\Debug";
-            var resultList = TestingSystem.RunTests(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(2, resultList.Count);
-            CheckTestCount(1, 0, 0, 0, resultList[0].TestsCountInfo);
-            CheckTestCount(0, 1, 0, 0, resultList[1].TestsCountInfo);
+            CheckTestCount(trueTestCount: 2, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6, 
+                testsExecutionInfo: testsExecutionInfo);
+
+            for (int i = 0; i < 3; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_5.TestClassBeforeClassWithException.IndefiniteTest{i}",
+                    typeof(AggregateException));
+            }
+
+            for (int i = 3; i < 6; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_5.TestClassBeforeWithException.IndefiniteTest{i}",
+                    typeof(AggregateException));
+            }
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithBeforeMethods()
+        public void CheckTestingSystemWithAfterAndAfterClassMethods()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_6\bin\Debug";
-            CheckTestingSystemWithAuxiliaryMethods(path);
+            var testsExecutionInfo = TestingSystem.Launch(path);
+
+            CheckTestCount(trueTestCount: 2, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6,
+                testsExecutionInfo: testsExecutionInfo);
+
+            for (int i = 0; i < 3; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_6.TestClassAfterClassWithException.IndefiniteTest{i}",
+                    typeof(AggregateException));
+            }
+
+            for (int i = 3; i < 6; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_6.TestClassAfterWithException.IndefiniteTest{i}",
+                    typeof(AggregateException));
+            }
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithAfterTestMethods()
+        public void CheckTestingSystemWithIncorrectMethods()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_7\bin\Debug";
-            CheckTestingSystemWithAuxiliaryMethods(path);
-        }
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-        [TestMethod]
-        public void CheckTestingSystemWithBeforeClassMethods()
-        {
-            var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_8\bin\Debug";
-            CheckTestingSystemWithAuxiliaryMethods(path);
-        }
+            CheckTestCount(trueTestCount: 0, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 7,
+                testsExecutionInfo: testsExecutionInfo);
 
-        [TestMethod]
-        public void CheckTestingSystemWithAfterClassMethods()
-        {
-            var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_9\bin\Debug";
-            CheckTestingSystemWithAuxiliaryMethods(path);
+            for (int i = 0; i < 3; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_7.TestClassIncorrectMethod.IndefiniteTest{i}",
+                    typeof(IncorrectMethodException));
+            }
+
+            for (int i = 3; i < 7; i++)
+            {
+                CheckIndefiniteTest(testsExecutionInfo.IndefiniteTests[i],
+                    $"TestProject_7.TestClassIncorrectTest.IndefiniteTest{i}",
+                    typeof(IncorrectMethodException));
+            }
         }
 
         [TestMethod]
         public void TestingSystemShouldNotNoticeMethodsWithInappropriateAttributes()
         {
-            var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_Attribute\bin\Debug";
-            var resultList = TestingSystem.RunTests(path);
+            var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_8\bin\Debug";
+            var testsExecutionInfo = TestingSystem.Launch(path);
 
-            Assert.AreEqual(1, resultList.Count);
-            CheckTestCount(2, 0, 0, 0, resultList[0].TestsCountInfo);
+            CheckTestCount(trueTestCount: 1, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 0,
+                testsExecutionInfo: testsExecutionInfo);
 
-            Assert.IsTrue((bool)resultList[0].Type.GetProperty("MethodExecutionCheck")
-                .GetValue(resultList[0].InstanceOfType));
+            CheckTrueTest(testsExecutionInfo.TrueTests[0], "TestProject_8.TestClass.TrueTest");
+        }
+
+        private static void CheckTestCount(int trueTestCount, int falseTestCount,
+            int ignoreTestCount, int indefiniteTestCount,
+            TestsExecutionInfo testsExecutionInfo)
+        {
+            Assert.AreEqual(trueTestCount, testsExecutionInfo.TrueTests.Count);
+            Assert.AreEqual(falseTestCount, testsExecutionInfo.FalseTests.Count);
+            Assert.AreEqual(ignoreTestCount, testsExecutionInfo.IgnoreTests.Count);
+            Assert.AreEqual(indefiniteTestCount, testsExecutionInfo.IndefiniteTests.Count);
+        }
+
+        private static void CheckTrueTest(DefaultTestExecutionInfo test, string name)
+        {
+            Assert.AreEqual(name, test.Name);
+            Assert.AreEqual("True", test.Result);
+            Assert.IsNull(test.Exception);
+            Assert.IsNotNull(test.RunTime);
+        }
+
+        private static void CheckFalseTest(DefaultTestExecutionInfo test, string name,
+            Type exceptionType)
+        {
+            Assert.AreEqual(name, test.Name);
+            Assert.AreEqual("False", test.Result);
+            Assert.AreEqual(exceptionType, test.Exception.GetType());
+            Assert.IsNotNull(test.RunTime);
+        }
+
+        private static void CheckIgnoreTest(IgnoreTestExecutionInfo test, string name, string reason)
+        {
+            Assert.AreEqual(name, test.Name);
+            Assert.AreEqual("Ignore", test.Result);
+            Assert.AreEqual(reason, test.Reason);
+        }
+
+        private static void CheckIndefiniteTest(IndefiniteTestExecutionInfo test, string name,
+            Type exceptionType)
+        {
+            Assert.AreEqual(name, test.Name);
+            Assert.AreEqual("Indefinite", test.Result);
+            Assert.AreEqual(exceptionType, test.Exception.GetType());
         }
 
         private static string GetTestProjectsPath()
             => new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName;
-
-        private static void CheckTestCount(int TrueTestCount, int FalseTestCount,
-            int IgnoreTestCount, int IndefiniteTestCount,
-            TestMethodsInTypeExecutionInfo.TestMethodsCountInfo testsCountInfo)
-        {
-            Assert.IsTrue(testsCountInfo.TrueTestCount == TrueTestCount);
-            Assert.IsTrue(testsCountInfo.FalseTestCount == FalseTestCount);
-            Assert.IsTrue(testsCountInfo.IgnoreTestCount == IgnoreTestCount);
-            Assert.IsTrue(testsCountInfo.IndefiniteTestCount == IndefiniteTestCount);
-        }
-
-        private static void CheckTestingSystemWithAuxiliaryMethods(string path)
-        {
-            var resultList = TestingSystem.RunTests(path);
-
-            Assert.AreEqual(2, resultList.Count);
-            CheckTestCount(1, 1, 1, 0, resultList[0].TestsCountInfo);
-            CheckTestCount(0, 0, 0, 3, resultList[1].TestsCountInfo);
-
-            Assert.IsTrue((bool)resultList[0].Type.GetProperty("MethodExecutionCheck")
-                .GetValue(resultList[0].InstanceOfType));
-        }
     }
 }

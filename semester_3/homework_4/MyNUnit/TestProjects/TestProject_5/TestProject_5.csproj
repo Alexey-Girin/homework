@@ -41,9 +41,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TestClass_1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestClass_2.cs" />
+    <Compile Include="TestClassBefore.cs" />
+    <Compile Include="TestClassBeforeClass.cs" />
+    <Compile Include="TestClassBeforeClassWithException.cs" />
+    <Compile Include="TestClassBeforeWithException.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\MyNUnit\MyNUnit.csproj">

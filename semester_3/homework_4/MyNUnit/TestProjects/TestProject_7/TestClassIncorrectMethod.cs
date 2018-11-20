@@ -3,27 +3,27 @@ using MyNUnit;
 
 namespace TestProject_7
 {
-    public class TestClass_After2
+    public class TestClassIncorrectMethod
     {
         [After]
-        public void TestMethod_0()
+        public int AfterMethod(int a)
         {
-            throw new Exception();
+            return 0;
         }
 
         [Test]
-        public void TestMethod_2()
+        public void IndefiniteTest0()
         {
         }
 
         [Test]
-        public void TestMethod_3()
+        public void IndefiniteTest1()
         {
             throw new Exception();
         }
 
         [Test(Ignore = "reason")]
-        public void TestMethod_4()
+        public void IndefiniteTest2()
         {
         }
     }

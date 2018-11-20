@@ -92,14 +92,6 @@
       <Project>{572ab448-4bed-40e2-b464-a11fc28a6c0d}</Project>
       <Name>TestProject_8</Name>
     </ProjectReference>
-    <ProjectReference Include="..\TestProjects\TestProject_9\TestProject_9.csproj">
-      <Project>{7c93bda6-1088-4042-b76c-64a3ab1b9efd}</Project>
-      <Name>TestProject_9</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\TestProjects\TestProject_Attribute\TestProject_Attribute.csproj">
-      <Project>{66a4f492-fa26-40dd-809f-a512c5af92ca}</Project>
-      <Name>TestProject_Attribute</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
