@@ -1,8 +1,8 @@
 image: Visual Studio 2017 
-branches:
+branches: 
   only:
-    - homework-3.2
+    - homework-3.4
 before_build:
-  - nuget restore semester_3/homework_2/MyThreadPool/MyThreadPool.sln
+  - nuget restore semester_3/homework_4/MyNUnit/MyNUnit.sln
 build:
-  project: semester_3/homework_2/MyThreadPool/MyThreadPool.sln
+  project: semester_3/homework_4/MyNUnit/MyNUnit.sln
