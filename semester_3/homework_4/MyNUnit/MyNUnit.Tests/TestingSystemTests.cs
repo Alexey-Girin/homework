@@ -91,7 +91,7 @@ namespace MyNUnit.Tests
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_5\bin\Debug";
             var testsExecutionInfo = TestingSystem.Launch(path);
 
-            CheckTestCount(trueTestCount: 2, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6, 
+            CheckTestCount(trueTestCount: 1, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6, 
                 testsExecutionInfo: testsExecutionInfo);
 
             for (int i = 0; i < 3; i++)
@@ -115,7 +115,7 @@ namespace MyNUnit.Tests
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_6\bin\Debug";
             var testsExecutionInfo = TestingSystem.Launch(path);
 
-            CheckTestCount(trueTestCount: 2, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6,
+            CheckTestCount(trueTestCount: 1, falseTestCount: 0, ignoreTestCount: 0, indefiniteTestCount: 6,
                 testsExecutionInfo: testsExecutionInfo);
 
             for (int i = 0; i < 3; i++)

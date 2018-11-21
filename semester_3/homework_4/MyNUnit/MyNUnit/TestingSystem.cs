@@ -113,7 +113,61 @@ namespace MyNUnit
                 AttributesEnumeration(methodInfo, methods);
             }
 
-            RunTests(methods, type);
+            if (methods.TestMethods.Count == 0 ||
+                !ExecuteAuxiliaryClassMethods(methods.BeforeClassMethods, methods.TestMethods, type))
+            {
+                return;
+            }
+
+            var testsResultInfo = RunTests(methods, type);
+
+            if (!ExecuteAuxiliaryClassMethods(methods.AfterClassMethods, methods.TestMethods, type))
+            {
+                return;
+            }
+
+            foreach (var testResultInfo in testsResultInfo)
+            {
+                testsExecutionInfo.Add(testResultInfo);
+            }
+        }
+
+        /// <summary>
+        /// Выполнение вспомогательных методов с атрибутами <see cref="AfterClassAttribute"/>, <see cref="BeforeClassAttribute"/>
+        /// </summary>
+        /// <param name="auxiliaryMethods">Коллекция вспомогательных методов.</param>
+        /// <param name="tests">Коллекция тестов.</param>
+        /// <param name="type">Тип, содержащий тестовые методы.</param>
+        /// <returns>True, если выполнение прошло успешно.</returns>
+        private static bool ExecuteAuxiliaryClassMethods(List<MethodInfo> auxiliaryMethods, List<TestMetadata> tests, Type type)
+        {
+            if (auxiliaryMethods.Count != 0)
+            {
+                var methodException = ExecuteAuxiliaryMethods(auxiliaryMethods, Activator.CreateInstance(type));
+
+                if (methodException != null)
+                {
+                    SaveTestsInCaseOfAuxiliaryMethodExeption(tests, methodException, type);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Добавление в <see cref="testsExecutionInfo"/> информации о тестах, в случае если какой-либо вспомогательный метод
+        /// с атрибутом <see cref="AfterClassAttribute"/> или <see cref="BeforeClassAttribute"/> бросил исключение.
+        /// </summary>
+        /// <param name="tests">Коллекция тестов.</param>
+        /// <param name="exception">Брошенное исключение.</param>
+        /// <param name="type">Тип, содержащий тестовые методы.</param>
+        private static void SaveTestsInCaseOfAuxiliaryMethodExeption(List<TestMetadata> tests, Exception exception, Type type)
+        {
+            foreach (var test in tests)
+            {
+                testsExecutionInfo.Add(new IndefiniteTestExecutionInfo(GetFullName(test.MethodInfo, type), exception));
+            }
         }
 
         /// <summary>
@@ -163,11 +217,12 @@ namespace MyNUnit
         /// </summary>
         /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
         /// <param name="type">Тип, содержащий тестовые методы.</param>
-        private static void RunTests(MethodsClassification methods, Type type)
+        /// <returns>Информация о результатах выполнения тестов.</returns>
+        private static List<ITestExecutionInfo> RunTests(MethodsClassification methods, Type type)
         {
-            var tasks = new Task[methods.TestMethods.Count];
+            var tasks = new Task<ITestExecutionInfo>[methods.TestMethods.Count];
 
-            for (int i = 0; i < methods.TestMethods.Count; i++)
+            for (int i = 0; i < tasks.Length; i++)
             {
                 int j = i;
                 tasks[j] = Task.Factory.StartNew(()
@@ -175,6 +230,15 @@ namespace MyNUnit
             }
 
             Task.WaitAll(tasks);
+
+            var testsResultInfo = new List<ITestExecutionInfo>();
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                testsResultInfo.Add(tasks[i].Result);
+            }
+
+            return testsResultInfo;
         }
 
         /// <summary>
@@ -183,7 +247,8 @@ namespace MyNUnit
         /// <param name="metadata">Информация о тестовом методе.</param>
         /// <param name="methods">Коллекции данных, содержащих информацию о методах типа.</param>
         /// <param name="type">Тип, содержащий тестовые методы.</param>
-        private static void RunTest(TestMetadata metadata, MethodsClassification methods, Type type)
+        /// <returns>Информация о результате выполнения теста.</returns>
+        private static ITestExecutionInfo RunTest(TestMetadata metadata, MethodsClassification methods, Type type)
         {
             try
             {
@@ -191,28 +256,29 @@ namespace MyNUnit
             }
             catch (IncorrectMethodException exception)
             {
-                SaveExecutuinInfo(new IndefiniteTestExecutionInfo(GetFullName(metadata.MethodInfo, type), exception));
-                return;
+                return new IndefiniteTestExecutionInfo(GetFullName(metadata.MethodInfo, type), exception);
             }
 
             object instanceOfType = Activator.CreateInstance(type);
-            ITestExecutionInfo executionInfo = null;
 
-            ExecuteAuxiliaryMethods(methods.BeforeClassMethods, methods.BeforeMethods, metadata.MethodInfo,
-                ref executionInfo, instanceOfType, type);
+            var beforeMethodException = ExecuteAuxiliaryMethods(methods.BeforeMethods, instanceOfType);
 
-            if (executionInfo != null)
+            if (beforeMethodException != null)
             {
-                return;
+                return new IndefiniteTestExecutionInfo(GetFullName(metadata.MethodInfo, type), beforeMethodException);
             }
 
             if (metadata.Attribute.Ignore != null)
             {
-                executionInfo = new IgnoreTestExecutionInfo(GetFullName(metadata.MethodInfo, type),
-                    metadata.Attribute.Ignore);
-                ExecuteAuxiliaryMethods(methods.AfterMethods, methods.AfterClassMethods, metadata.MethodInfo,
-                    ref executionInfo, instanceOfType, type);
-                return;
+                var afterMethodExceptionIgnoreTest = ExecuteAuxiliaryMethods(methods.AfterMethods, instanceOfType);
+
+                if (afterMethodExceptionIgnoreTest != null)
+                {
+                    return new IndefiniteTestExecutionInfo(GetFullName(metadata.MethodInfo, type),
+                        afterMethodExceptionIgnoreTest);
+                }
+
+                return new IgnoreTestExecutionInfo(GetFullName(metadata.MethodInfo, type), metadata.Attribute.Ignore);
             }
 
             var stopwatch = new Stopwatch();
@@ -243,51 +309,40 @@ namespace MyNUnit
                 testException = new ExpectedExceptionWasNotThrown();
             }
 
-            executionInfo = new DefaultTestExecutionInfo(GetFullName(metadata.MethodInfo, type),
-                stopwatch.ElapsedMilliseconds, testException);
-            ExecuteAuxiliaryMethods(methods.AfterMethods, methods.AfterClassMethods, metadata.MethodInfo,
-                ref executionInfo, instanceOfType, type);
+            var afterMethodException = ExecuteAuxiliaryMethods(methods.AfterMethods, instanceOfType);
+
+            if (afterMethodException != null)
+            {
+                return new IndefiniteTestExecutionInfo(GetFullName(metadata.MethodInfo, type), afterMethodException);
+            }
+
+            return new DefaultTestExecutionInfo(GetFullName(metadata.MethodInfo, type), stopwatch.ElapsedMilliseconds,
+                testException);
         }
 
         /// <summary>
         /// Выполнение вспомогательных методов.
         /// </summary>
-        /// <param name="firstMethods">Коллекция методов, которые будут выполнены в первую очередь.</param>
-        /// <param name="secondMethods">Коллекция методов, которые будут выполнены во вторую очередь.</param>
-        /// <param name="methodInfo">Информация о тестовом методе.</param>
-        /// <param name="executionInfo">Объект, содержащий информацию о результате выполения теста.</param>
+        /// <param name="auxiliaryMethods">Коллекция вспомогательных методов.</param>
         /// <param name="instanceOfType">Экземпляр, на котором запускается тест.</param>
-        /// <param name="type">Тип, содержащий тестовые методы.</param>
-        private static void ExecuteAuxiliaryMethods(List<MethodInfo> firstMethods, List<MethodInfo> secondMethods,
-            MethodInfo methodInfo, ref ITestExecutionInfo executionInfo, object instanceOfType, Type type)
+        /// <returns>Исключение вспомогательного метода. null, если исключение не возникло.</returns>
+        private static Exception ExecuteAuxiliaryMethods(List<MethodInfo> auxiliaryMethods, object instanceOfType)
         {
             try
             {
-                MethodsExecution(firstMethods, instanceOfType);
-                MethodsExecution(secondMethods, instanceOfType);
+                MethodsExecution(auxiliaryMethods, instanceOfType);
             }
             catch (IncorrectMethodException exception)
             {
-                executionInfo = new IndefiniteTestExecutionInfo(GetFullName(methodInfo, type), exception);
+                return exception;
             }
             catch (Exception exception)
             {
-                executionInfo = new IndefiniteTestExecutionInfo(GetFullName(methodInfo, type),
-                    exception.InnerException);
+                return exception.InnerException;
             }
 
-            if (executionInfo != null)
-            {
-                SaveExecutuinInfo(executionInfo);
-            }
+            return null;
         }
-
-        /// <summary>
-        /// Добавление информации о результате выполнения теста в <see cref="testsExecutionInfo"/>.
-        /// </summary>
-        /// <param name="executionInfo">Информация о результате выполнения теста.</param>
-        private static void SaveExecutuinInfo(ITestExecutionInfo executionInfo)
-            => testsExecutionInfo.Add(executionInfo);
 
         /// <summary>
         /// Выполнение вспомогательных методов для теста.
