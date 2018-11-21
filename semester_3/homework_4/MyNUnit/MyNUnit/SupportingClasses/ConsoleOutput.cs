@@ -40,9 +40,9 @@ namespace MyNUnit.SupportingClasses
             Console.WriteLine($"Result:\t{executionInfo.Result}");
             Console.WriteLine($"Name:\t{executionInfo.Name}");
 
-            if (executionInfo.Exception != null)
+            if (executionInfo.UnexpectedException != null)
             {
-                Console.WriteLine(executionInfo.Exception);
+                Console.WriteLine(executionInfo.UnexpectedException);
             }
 
             Console.WriteLine($"Time:\t{executionInfo.RunTime} ms\n");

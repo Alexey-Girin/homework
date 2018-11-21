@@ -10,13 +10,7 @@ namespace MyNUnit.SupportingClasses
         /// <summary>
         /// Результат теста.
         /// </summary>
-        public string Result
-        {
-            get
-            {
-                return (Exception == null).ToString();
-            }
-        }
+        public string Result => (UnexpectedException == null).ToString();
 
         /// <summary>
         /// Имя теста.
@@ -29,9 +23,9 @@ namespace MyNUnit.SupportingClasses
         public long RunTime { get; }
 
         /// <summary>
-        /// Возможное исключение.
+        /// Исключение, брошенное во время исполнения теста. Не null только тогда, когда оно не ожидалось.
         /// </summary>
-        public Exception Exception { get; }
+        public Exception UnexpectedException { get; }
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="DefaultTestExecutionInfo"/>.
@@ -43,7 +37,7 @@ namespace MyNUnit.SupportingClasses
         {
             Name = name;
             RunTime = runTime;
-            Exception = exception;
+            UnexpectedException = exception;
         }
 
         /// <summary>

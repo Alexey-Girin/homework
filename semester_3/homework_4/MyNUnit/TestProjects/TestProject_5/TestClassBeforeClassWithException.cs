@@ -6,7 +6,7 @@ namespace TestProject_5
     public class TestClassBeforeClassWithException
     {
         [BeforeClass]
-        public void BeforeClassMethod()
+        public static void BeforeClassMethod()
         {
             throw new AggregateException();
         }

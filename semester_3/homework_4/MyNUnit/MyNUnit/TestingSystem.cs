@@ -364,12 +364,14 @@ namespace MyNUnit
         /// <param name="methodInfo">Информация о методе.</param>
         private static void CheckMethod(MethodInfo methodInfo)
         {
-            if (methodInfo.ReturnType != typeof(void) || methodInfo.GetParameters().Count() != 0)
+            if (methodInfo.ReturnType != typeof(void) ||
+                methodInfo.GetParameters().Count() != 0 ||
+                Attribute.GetCustomAttributes(methodInfo).Length != 1)
             {
                 throw new IncorrectMethodException(methodInfo.Name);
             }
         }
-
+        
         /// <summary>
         /// Получение полного имени метода.
         /// </summary>

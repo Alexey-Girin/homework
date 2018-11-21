@@ -6,7 +6,7 @@ namespace TestProject_6
     public class TestClassAfterClassWithException
     {
         [AfterClass]
-        public void AfterClassMethod()
+        public static void AfterClassMethod()
         {
             throw new AggregateException();
         }

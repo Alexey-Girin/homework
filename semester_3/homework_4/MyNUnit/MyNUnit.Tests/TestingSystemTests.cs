@@ -69,7 +69,7 @@ namespace MyNUnit.Tests
         }
 
         [TestMethod]
-        public void CheckTestingSystemWithWithSeveralTypes()
+        public void CheckTestingSystemWithSeveralTypes()
         {
             var path = $@"{GetTestProjectsPath()}\TestProjects\TestProject_4\bin\Debug";
             var testsExecutionInfo = TestingSystem.Launch(path);
@@ -183,7 +183,7 @@ namespace MyNUnit.Tests
         {
             Assert.AreEqual(name, test.Name);
             Assert.AreEqual("True", test.Result);
-            Assert.IsNull(test.Exception);
+            Assert.IsNull(test.UnexpectedException);
             Assert.IsNotNull(test.RunTime);
         }
 
@@ -192,7 +192,7 @@ namespace MyNUnit.Tests
         {
             Assert.AreEqual(name, test.Name);
             Assert.AreEqual("False", test.Result);
-            Assert.AreEqual(exceptionType, test.Exception.GetType());
+            Assert.AreEqual(exceptionType, test.UnexpectedException.GetType());
             Assert.IsNotNull(test.RunTime);
         }
 
