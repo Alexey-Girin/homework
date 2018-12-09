@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Collections.Generic;
 using SimpleFTP_Client.Exceptions;
+using System.Collections.ObjectModel;
 
 namespace SimpleFTP_Client
 {
@@ -35,6 +36,8 @@ namespace SimpleFTP_Client
         /// Объект, позволяющий записывать информацию в поток.
         /// </summary>
         private StreamWriter streamWriter;
+
+        public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="FtpClient"/>.
@@ -73,7 +76,7 @@ namespace SimpleFTP_Client
         /// </summary>
         /// <param name="path">Путь к директории на сервере.</param>
         /// <returns>Информация о файлах.</returns>
-        public List<FileInfo> List(string path)
+        public void List(string path)
         {
             const int request = 1;
 
@@ -103,19 +106,17 @@ namespace SimpleFTP_Client
                 throw new DirectoryNotExistException();
             }
 
-            var fileStructs = new List<FileInfo>();
+            Files.Clear();
+            Files.Add(new FileInfo("...", false));
 
             for (int i = 0; i < size; i++)
             {
                 string fileName = streamReader.ReadLine();
                 bool IsDir = "True" == streamReader.ReadLine();
-                fileStructs.Add(new FileInfo(fileName, IsDir));
+                Files.Add(new FileInfo(fileName, IsDir));
             }
 
             Disconnect();
-
-            fileStructs.Sort();
-            return fileStructs;
         }
 
         /// <summary>

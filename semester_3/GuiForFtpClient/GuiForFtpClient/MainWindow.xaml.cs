@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,65 +11,46 @@ namespace GuiForFtpClient
         public MainWindow()
         {
             InitializeComponent();
-            client = new FtpClient(hostNameTextBlock.Text, int.Parse(hostPortTextBlock.Text));
         }
 
         private FtpClient client;
 
         private Stack<string> pathHistory = new Stack<string>();
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            UpdateListBox(client.List(@"C:\"));
-            pathHistory.Push(@"C:\");
-        }
+        private string defaultPath = @"C:\";
 
-        private void ListBoxItem_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            string path = (sender as ListBoxItem).Content.ToString();
+            string path = ((sender as ListBox).SelectedItem as FileInfo).Name;
+
+            if (path == "...")
+            {
+                Back();
+                return;
+            }
+
+            client.List(path);
             pathHistory.Push(path);
-            UpdateListBox(client.List(path));
         }
 
-        private void ListBoxItem_MouseDoubleClick1(object sender, MouseButtonEventArgs e)
+        private void Back()
         {
-            if (pathHistory.Count() == 1)
+            if (pathHistory.Count == 1)
             {
                 return;
             }
 
             pathHistory.Pop();
-            UpdateListBox(client.List(pathHistory.Peek()));
+            client.List(pathHistory.Peek());
         }
 
-        private void UpdateListBox(List<FileInfo> filesInfo)
-        {
-            listBox.Items.Clear();
-
-            var item1 = new ListBoxItem
-            {
-                Content = "..."
-            };
-
-            item1.MouseDoubleClick += new MouseButtonEventHandler(ListBoxItem_MouseDoubleClick1);
-            listBox.Items.Add(item1);
-
-            foreach (var res in filesInfo)
-            {
-                var item = new ListBoxItem
-                {
-                    Content = res.Name
-                };
-                listBox.Items.Add(item);
-
-                item.MouseDoubleClick += new MouseButtonEventHandler(ListBoxItem_MouseDoubleClick);
-            }
-        }
-
-        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        private void ConnectButtonClick(object sender, RoutedEventArgs e)
         {
             client = new FtpClient(hostNameTextBlock.Text, int.Parse(hostPortTextBlock.Text));
-            listBox.Items.Clear();
+            listOfFiles.ItemsSource = client.Files;
+
+            client.List(defaultPath);
+            pathHistory.Push(defaultPath);
         }
     }
 }
