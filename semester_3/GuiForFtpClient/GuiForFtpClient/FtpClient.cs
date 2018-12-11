@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
-using System.Collections.Generic;
+using GuiForFtpClient.Extentions;
 using SimpleFTP_Client.Exceptions;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -13,11 +13,6 @@ namespace SimpleFTP_Client
     /// </summary>
     public class FtpClient : DependencyObject
     {
-        /// <summary>
-        /// TCP-клиент.
-        /// </summary>
-        private TcpClient client;
-
         public static readonly DependencyProperty HostNameProperty;
 
         public static readonly DependencyProperty HostPortProperty;
@@ -42,17 +37,6 @@ namespace SimpleFTP_Client
             set { SetValue(PathToDownloadProperty, value); }
         }
 
-
-        /// <summary>
-        /// Объект, позволяющий считывать информацию из потока.
-        /// </summary>
-        private StreamReader streamReader;
-
-        /// <summary>
-        /// Объект, позволяющий записывать информацию в поток.
-        /// </summary>
-        private StreamWriter streamWriter;
-
         public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
 
         static FtpClient()
@@ -73,40 +57,22 @@ namespace SimpleFTP_Client
                 typeof(FtpClient));
         }
 
-        /// <summary>
-        /// Метод, устанавливающий соединение с сервером.
-        /// </summary>
-        /// <returns>True, если соединение установлено.</returns>
-        private bool Connect()
+        public void List(string path)
         {
+            TcpClient client = null;
+            const int request = 1;
+
             try
             {
                 client = new TcpClient(HostName, int.Parse(HostPort));
             }
             catch (SocketException)
             {
-                return false;
-            }
-
-            streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
-            streamReader = new StreamReader(client.GetStream());
-
-            return true;
-        }
-
-        /// <summary>
-        /// Запрос на листинг файлов в директории на сервере.
-        /// </summary>
-        /// <param name="path">Путь к директории на сервере.</param>
-        /// <returns>Информация о файлах.</returns>
-        public void List(string path)
-        {
-            const int request = 1;
-
-            if (!Connect())
-            {
                 throw new ConnectException();
             }
+
+            var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            var streamReader = new StreamReader(client.GetStream());
 
             streamWriter.Write(request);
             streamWriter.WriteLine(path);
@@ -119,18 +85,17 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
-                Disconnect();
+                client.Close();
                 throw new ServerErrorException();
             }
 
             if (size == -1)
             {
-                Disconnect();
+                client.Close();
                 throw new DirectoryNotExistException();
             }
 
-            Files.Clear();
-            Files.Add(new FileInfo("...", false));
+            Files.Update();
 
             for (int i = 0; i < size; i++)
             {
@@ -139,7 +104,7 @@ namespace SimpleFTP_Client
                 Files.Add(new FileInfo(fileName, IsDir));
             }
 
-            Disconnect();
+            client.Close();
         }
 
         /// <summary>
@@ -150,12 +115,20 @@ namespace SimpleFTP_Client
         public void Get(string path)
         {
             string pathToDownload = PathToDownload;
+            TcpClient client = null;
             const int request = 2;
 
-            if (!Connect())
+            try
+            {
+                client = new TcpClient(HostName, int.Parse(HostPort));
+            }
+            catch (SocketException)
             {
                 throw new ConnectException();
             }
+
+            var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            var streamReader = new StreamReader(client.GetStream());
 
             streamWriter.Write(request);
             streamWriter.WriteLine(path);
@@ -168,33 +141,33 @@ namespace SimpleFTP_Client
             }
             catch (ArgumentNullException)
             {
-                Disconnect();
+                client.Close();
                 throw new ServerErrorException();
             }
 
             if (size == -1)
             {
-                Disconnect();
+                client.Close();
                 throw new FileNotExistException();
             }
 
             try
             {
-                DownloadFile(pathToDownload);
+                DownloadFile(pathToDownload, client);
             }
             catch (Exception)
             {
                 throw;
             }
 
-            Disconnect();
+            client.Close();
         }
 
         /// <summary>
         /// Скачивание файла.
         /// </summary>
         /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
-        private void DownloadFile(string pathToDownload)
+        private void DownloadFile(string pathToDownload, TcpClient client)
         {
             FileStream fileStream = null;
 
@@ -204,6 +177,7 @@ namespace SimpleFTP_Client
             }
             catch (Exception exception)
             {
+                MessageBox.Show(exception.Message);
                 throw new Exception("ошибка скачивания файла", exception);
             }
 
@@ -212,10 +186,5 @@ namespace SimpleFTP_Client
 
             fileStream.Close();
         }
-
-        /// <summary>
-        /// Метод, разрывающий соединение с сервером.
-        /// </summary>
-        public void Disconnect() => client.Close();
     }
 }

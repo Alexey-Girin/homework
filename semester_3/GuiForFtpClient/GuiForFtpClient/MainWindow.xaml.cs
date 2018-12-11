@@ -22,8 +22,19 @@ namespace GuiForFtpClient
 
         private void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            string path = ((sender as ListBox).SelectedItem as FileInfo).Name;
+            var info = (sender as ListBox).SelectedItem as FileInfo;
 
+            if (info.IsDirectory)
+            {
+                GetNewDirectory(info.Name);
+                return;
+            }
+
+            DownloadFile(info.Name);
+        }
+
+        private void GetNewDirectory(string path)
+        {
             if (path == "...")
             {
                 Back();
@@ -44,6 +55,8 @@ namespace GuiForFtpClient
             pathHistory.Pop();
             client.List(pathHistory.Peek());
         }
+
+        private void DownloadFile(string path) => client.Get(path);
 
         private void ConnectButtonClick(object sender, RoutedEventArgs e)
         {
