@@ -15,7 +15,7 @@
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <ListBox x:Name="listOfFiles" Grid.ColumnSpan="2" MouseDoubleClick="ListOfFilesMouseDoubleClick">
+        <ListBox ItemsSource="{Binding Files}" Grid.ColumnSpan="2" MouseDoubleClick="ListOfFilesMouseDoubleClick">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Path=Name}"/>
@@ -35,14 +35,21 @@
                 <ColumnDefinition Width="4*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Место сохранения"/>
+
+            <TextBlock Text="Папка для скачивания"/>
+            <TextBox x:Name="pathToDownload" Text="{Binding PathToDownload, Mode=OneWayToSource}" 
+                     Grid.Column="1" Grid.ColumnSpan="4"/>
+
             <TextBlock Text="Адрес:" Grid.Row="1"/>
+            <TextBox x:Name="hostName" Text="{Binding HostName, Mode=OneWayToSource}" 
+                     Grid.Row="1" Grid.Column="1"/>
+
             <TextBlock Text="Порт:" Grid.Row="1" Grid.Column="2"/>
-            <TextBox x:Name="hostNameTextBlock" Text="localhost" Grid.Row="1" Grid.Column="1"/>
-            <TextBox x:Name="hostPortTextBlock" Text="8888" Grid.Row="1" Grid.Column="3"/>
-            <TextBox Grid.Column="1" Grid.ColumnSpan="4"/>
-            <Button Name="connectButton"  Content="Подключиться" Click="ConnectButtonClick" Grid.Row="1"
-                    Grid.Column="4"/>
+            <TextBox x:Name="hostPort" Text="{Binding HostPort, Mode=OneWayToSource}" 
+                     Grid.Row="1" Grid.Column="3"/>
+
+            <Button Name="connectButton"  Content="Подключиться" Click="ConnectButtonClick" 
+                     Grid.Row="1" Grid.Column="4"/>
         </Grid>
     </Grid>
 </Window>

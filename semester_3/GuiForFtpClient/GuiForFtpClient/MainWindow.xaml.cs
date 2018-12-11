@@ -11,9 +11,10 @@ namespace GuiForFtpClient
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = client;
         }
 
-        private FtpClient client;
+        private FtpClient client = new FtpClient();
 
         private Stack<string> pathHistory = new Stack<string>();
 
@@ -46,9 +47,6 @@ namespace GuiForFtpClient
 
         private void ConnectButtonClick(object sender, RoutedEventArgs e)
         {
-            client = new FtpClient(hostNameTextBlock.Text, int.Parse(hostPortTextBlock.Text));
-            listOfFiles.ItemsSource = client.Files;
-
             client.List(defaultPath);
             pathHistory.Push(defaultPath);
         }
