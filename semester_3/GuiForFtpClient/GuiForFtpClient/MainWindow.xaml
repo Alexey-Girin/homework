@@ -23,6 +23,9 @@
         <Style TargetType="ListBox">
             <Setter Property="Margin" Value="3"/>
         </Style>
+        <Style x:Key="SimpleTextBlockStyle">
+            <Setter Property="TextBlock.Margin" Value="3"/>
+        </Style>
     </Window.Resources>
     
     <TabControl>
@@ -41,7 +44,8 @@
                         <ColumnDefinition Width="3*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Текущая папка:" TextAlignment="Left"/>
-                    <TextBlock Grid.Column="1"/>
+                    <TextBlock Text="{Binding CurrentDirectory}"  Grid.Column="1"
+                               TextAlignment="Left"/>
                     <Button x:Name="Download" Content="Скачать все" Grid.Column="2"
                             Click="DownloadButtonClick"/>
                 </Grid>
@@ -52,7 +56,7 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <ListBox ItemsSource="{Binding Files}" Grid.ColumnSpan="2"
-                     MouseDoubleClick="ListOfFilesMouseDoubleClick">
+                             MouseDoubleClick="ListOfFilesMouseDoubleClick">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Path=Name}"/>
@@ -92,8 +96,36 @@
             </Grid>
         </TabItem>
         <TabItem Header="Прогресс">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Скачиваются:" Grid.Row="0"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <ListBox ItemsSource="{Binding FilesWhichDownloadNow, Mode=OneWay}" Grid.Row="1">
+
+                </ListBox>
+                <TextBlock Text="Скачались:" Grid.Row="2"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <ListBox ItemsSource="{Binding FilesWhichDownloaded, Mode=OneWay}" Grid.Row="3">
+
+                </ListBox>
+            </Grid>
         </TabItem>
         <TabItem Header="Справка">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="10*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Двойной щелчок ЛКМ по папке - переход к содержимому папки"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <TextBlock Text="Двойной щелчок ЛКМ по файлу - скачивание файла"
+                           Style="{StaticResource SimpleTextBlockStyle}" Grid.Row="1"/>
+            </Grid>
         </TabItem>
     </TabControl>
 </Window>

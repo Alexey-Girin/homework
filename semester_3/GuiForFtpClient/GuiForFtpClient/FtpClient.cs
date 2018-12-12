@@ -38,9 +38,27 @@ namespace SimpleFTP_Client
 
         public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
 
+        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
+            new ObservableCollection<string>();
+
+        public ObservableCollection<string> FilesWhichDownloaded { get; } =
+           new ObservableCollection<string>();
+
+        public static readonly DependencyProperty CurrentDirectoryProperty;
+
+        public string CurrentDirectory
+        {
+            get { return (string)GetValue(CurrentDirectoryProperty); }
+            set { SetValue(CurrentDirectoryProperty, value); }
+        }
+
         private object locker = new object();
 
         private object saveLocker = new object();
+
+        private object filesWhichDownloadNowLocker = new object();
+
+        private object filesWhichDownloadedLocker = new object();
 
         static FtpClient()
         {
@@ -58,9 +76,21 @@ namespace SimpleFTP_Client
                 "PathToDownload",
                 typeof(string),
                 typeof(FtpClient));
+
+            CurrentDirectoryProperty = DependencyProperty.Register(
+                "CurrentDirectory",
+                typeof(string),
+                typeof(FtpClient));
         }
 
-        public void Reset() => Files.Clear();
+        public void Reset()
+        {
+            Files.Clear();
+            CurrentDirectory = null;
+
+            FilesWhichDownloadNow.Clear();
+            FilesWhichDownloaded.Clear();
+        }
 
         public void List(string path)
         {
@@ -73,6 +103,7 @@ namespace SimpleFTP_Client
             }
             catch (SocketException)
             {
+                Reset();
                 throw new ConnectException("Не удалось подключиться к серверу");
             }
 
@@ -101,6 +132,7 @@ namespace SimpleFTP_Client
             }
 
             Files.Update();
+            CurrentDirectory = path;
 
             for (int i = 0; i < size; i++)
             {
@@ -165,6 +197,7 @@ namespace SimpleFTP_Client
 
         public void Get(string path, InfoForDownload infoForDownload)
         {
+            AddFileToFilesWhichDownloadNow(path);
             TcpClient client = null;
             const int request = 2;
 
@@ -176,6 +209,7 @@ namespace SimpleFTP_Client
             }
             catch (SocketException)
             {
+                RemoveFileFromFilesWhichDownloadNow(path);
                 throw new ConnectException("Не удалось подключиться к серверу - " +
                     $"{path}");
             }
@@ -195,6 +229,7 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 client.Close();
+                RemoveFileFromFilesWhichDownloadNow(path);
                 throw new ServerErrorException("Не удалось выполнить запрос для " +
                     $"{path}");
             }
@@ -202,6 +237,7 @@ namespace SimpleFTP_Client
             if (size == -1)
             {
                 client.Close();
+                RemoveFileFromFilesWhichDownloadNow(path);
                 throw new FileNotExistException("Не удалось выполнить запрос для " +
                     $"{path}");
             }
@@ -212,12 +248,15 @@ namespace SimpleFTP_Client
             }
             catch (Exception)
             {
+                RemoveFileFromFilesWhichDownloadNow(path);
                 throw;
             }
 
             client.Close();
+            RemoveFileFromFilesWhichDownloadNow(path);
+            AddFileToFilesWhichDownloaded(path);
         }
-        
+
         private void Download(string pathToDownload, TcpClient client, string path)
         {
             FileStream fileStream = null;
@@ -252,6 +291,30 @@ namespace SimpleFTP_Client
             }
 
             return report;
+        }
+
+        private void AddFileToFilesWhichDownloadNow(string path)
+        {
+            lock (filesWhichDownloadNowLocker)
+            {
+                FilesWhichDownloadNow.Add(path);
+            }
+        }
+
+        private void RemoveFileFromFilesWhichDownloadNow(string path)
+        {
+            lock (filesWhichDownloadNowLocker)
+            {
+                FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+            }
+        }
+
+        private void AddFileToFilesWhichDownloaded(string path)
+        {
+            lock (filesWhichDownloadedLocker)
+            {
+                FilesWhichDownloaded.Add(path);
+            }
         }
     }
 }

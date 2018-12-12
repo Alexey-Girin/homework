@@ -25,6 +25,11 @@ namespace GuiForFtpClient
         {
             var fileInfo = (sender as ListBox).SelectedItem as FileInfo;
 
+            if (fileInfo == null)
+            {
+                return;
+            }
+
             if (fileInfo.IsDirectory)
             {
                 GetNewDirectory(fileInfo.Name);
@@ -49,7 +54,6 @@ namespace GuiForFtpClient
             catch (Exception exception)
             {
                 MessageBox.Show(exception.Message);
-                client.Reset();
                 return;
             }
 
@@ -71,7 +75,6 @@ namespace GuiForFtpClient
             catch (Exception exception)
             {
                 MessageBox.Show(exception.Message);
-                client.Reset();
             }
         }
 
@@ -100,11 +103,9 @@ namespace GuiForFtpClient
         }
 
         private void ConnectButtonClick(object sender, RoutedEventArgs e)
-            => GetNewDirectory(defaultPath);
-
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-
+            client.Reset();
+            GetNewDirectory(defaultPath);
         }
     }
 }
