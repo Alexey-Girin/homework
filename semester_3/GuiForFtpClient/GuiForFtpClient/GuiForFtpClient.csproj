@@ -70,6 +70,7 @@
     <Compile Include="Extentions\ObservableCollectionExtention.cs" />
     <Compile Include="FileInfo.cs" />
     <Compile Include="FtpClient.cs" />
+    <Compile Include="InfoForDownload.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,15 +23,15 @@ namespace GuiForFtpClient
 
         private void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var info = (sender as ListBox).SelectedItem as FileInfo;
+            var fileInfo = (sender as ListBox).SelectedItem as FileInfo;
 
-            if (info.IsDirectory)
+            if (fileInfo.IsDirectory)
             {
-                GetNewDirectory(info.Name);
+                GetNewDirectory(fileInfo.Name);
                 return;
             }
 
-            DownloadFile(info.Name);
+            DownloadFile(fileInfo.Name);
         }
 
         private void GetNewDirectory(string path)
@@ -41,7 +42,17 @@ namespace GuiForFtpClient
                 return;
             }
 
-            client.List(path);
+            try
+            {
+                client.List(path);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message);
+                client.Reset();
+                return;
+            }
+
             pathHistory.Push(path);
         }
 
@@ -52,16 +63,48 @@ namespace GuiForFtpClient
                 return;
             }
 
-            pathHistory.Pop();
-            client.List(pathHistory.Peek());
+            try
+            {
+                pathHistory.Pop();
+                client.List(pathHistory.Peek());
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message);
+                client.Reset();
+            }
         }
 
-        private void DownloadFile(string path) => client.Get(path);
+        private void DownloadFile(string path)
+        {
+            try
+            {
+                client.DownloadFile(path);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message);
+            }
+        }
+
+        private void DownloadButtonClick(object sender, RoutedEventArgs e)
+        {
+            var errorReport = client.DownloadAllFilesInDirectory();
+
+            if (errorReport == null)
+            {
+                return;
+            }
+
+            MessageBox.Show(errorReport);
+        }
 
         private void ConnectButtonClick(object sender, RoutedEventArgs e)
+            => GetNewDirectory(defaultPath);
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            client.List(defaultPath);
-            pathHistory.Push(defaultPath);
+
         }
     }
 }

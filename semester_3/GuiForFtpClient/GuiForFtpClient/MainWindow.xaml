@@ -5,69 +5,95 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GuiForFtpClient"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="1*"/>
-            <RowDefinition Height="7*"/>
-            <RowDefinition Height="2*"/>
-        </Grid.RowDefinitions>
+        Title="FTP Client" Height="450" Width="900" MinHeight="450" MinWidth="900">
+    
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="MaxHeight" Value="25"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="MaxHeight" Value="25"/>
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+    </Window.Resources>
+    
+    <TabControl>
+        <TabItem Header="Главный экран">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                    <RowDefinition Height="2*"/>
+                </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="5*"/>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="Текущая папка: "/>
-            <TextBlock Grid.Column="1"/>
-            <Button Content="Скачать все" Grid.Column="2"/>
-            <Button Content="Прогресс" Grid.Column="3"/>
-        </Grid>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="14*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Текущая папка:" TextAlignment="Left"/>
+                    <TextBlock Grid.Column="1"/>
+                    <Button x:Name="Download" Content="Скачать все" Grid.Column="2"
+                            Click="DownloadButtonClick"/>
+                </Grid>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <ListBox ItemsSource="{Binding Files}" Grid.ColumnSpan="2"
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox ItemsSource="{Binding Files}" Grid.ColumnSpan="2"
                      MouseDoubleClick="ListOfFilesMouseDoubleClick">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Path=Name}"/>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </Grid>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Path=Name}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
 
-        <Grid Grid.Row="2">
-            <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="4*"/>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="4*"/>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
 
-            <TextBlock Text="Папка для скачивания"/>
-            <TextBox x:Name="pathToDownload" Text="{Binding PathToDownload, Mode=OneWayToSource}" 
-                     Grid.Column="1" Grid.ColumnSpan="4"/>
+                    <TextBlock Text="Папка для скачивания:"/>
+                    <TextBox x:Name="pathToDownload" Text="{Binding PathToDownload, Mode=OneWayToSource}" 
+                     Grid.Column="1" Grid.ColumnSpan="3"/>
 
-            <TextBlock Text="Адрес:" Grid.Row="1"/>
-            <TextBox x:Name="hostName" Text="{Binding HostName, Mode=OneWayToSource}"
+                    <TextBlock Text="Адрес:" Grid.Row="1"/>
+                    <TextBox x:Name="hostName" Text="{Binding HostName, Mode=OneWayToSource}"
                      Grid.Row="1" Grid.Column="1"/>
 
-            <TextBlock Text="Порт:" Grid.Row="1" Grid.Column="2"/>
-            <TextBox x:Name="hostPort" Text="{Binding HostPort, Mode=OneWayToSource}" 
+                    <TextBlock Text="Порт:" Grid.Row="1" Grid.Column="2"/>
+                    <TextBox x:Name="hostPort" Text="{Binding HostPort, Mode=OneWayToSource}" 
                      Grid.Row="1" Grid.Column="3"/>
 
-            <Button Name="connectButton" Content="Подключиться" Click="ConnectButtonClick" 
-                     Grid.Row="1" Grid.Column="4"/>
-        </Grid>
-    </Grid>
+                    <Button Name="connectButton" Content="Подключиться" Click="ConnectButtonClick" 
+                     Grid.Row="0" Grid.Column="4" Grid.RowSpan="2"/>
+                </Grid>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Прогресс">
+        </TabItem>
+        <TabItem Header="Справка">
+        </TabItem>
+    </TabControl>
 </Window>

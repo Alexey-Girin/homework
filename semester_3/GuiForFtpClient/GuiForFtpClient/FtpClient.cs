@@ -5,12 +5,11 @@ using GuiForFtpClient.Extentions;
 using SimpleFTP_Client.Exceptions;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SimpleFTP_Client
 {
-    /// <summary>
-    /// FTP-клиент.
-    /// </summary>
     public class FtpClient : DependencyObject
     {
         public static readonly DependencyProperty HostNameProperty;
@@ -39,6 +38,10 @@ namespace SimpleFTP_Client
 
         public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
 
+        private object locker = new object();
+
+        private object saveLocker = new object();
+
         static FtpClient()
         {
             HostNameProperty = DependencyProperty.Register(
@@ -57,6 +60,8 @@ namespace SimpleFTP_Client
                 typeof(FtpClient));
         }
 
+        public void Reset() => Files.Clear();
+
         public void List(string path)
         {
             TcpClient client = null;
@@ -68,7 +73,7 @@ namespace SimpleFTP_Client
             }
             catch (SocketException)
             {
-                throw new ConnectException();
+                throw new ConnectException("Не удалось подключиться к серверу");
             }
 
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
@@ -86,13 +91,13 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 client.Close();
-                throw new ServerErrorException();
+                throw new ServerErrorException("Не удалось выполнить запрос");
             }
 
             if (size == -1)
             {
                 client.Close();
-                throw new DirectoryNotExistException();
+                throw new DirectoryNotExistException("Не удалось выполнить запрос");
             }
 
             Files.Update();
@@ -107,24 +112,72 @@ namespace SimpleFTP_Client
             client.Close();
         }
 
-        /// <summary>
-        /// Запрос на скачивание файла с сервера.
-        /// </summary>
-        /// <param name="path">Путь к файлу на сервере.</param>
-        /// <param name="pathToSave">Путь к месту скачивания файла.</param>
-        public void Get(string path)
+        public string DownloadAllFilesInDirectory()
         {
-            string pathToDownload = PathToDownload;
+            var listOfFiles = new List<FileInfo>();
+            InfoForDownload infoForDownload = null;
+
+            lock (locker)
+            {
+                infoForDownload = new InfoForDownload(HostName, HostPort, PathToDownload);
+            }
+
+            foreach (var file in Files)
+            {
+                if (!file.IsDirectory)
+                {
+                    listOfFiles.Add(file);
+                }
+            }
+
+            var tasks = new Task[listOfFiles.Count];
+
+            for (int i = 0; i < listOfFiles.Count; i++)
+            {
+                int j = i;
+
+                tasks[j] = Task.Factory.StartNew(() => Get(
+                    listOfFiles[j].Name, new InfoForDownload(
+                        infoForDownload.FixedHostName,
+                        infoForDownload.FixedHostPort,
+                        infoForDownload.FixedPathToDownload)));
+            }
+
+            try
+            {
+                Task.WaitAll(tasks);
+            }
+            catch (AggregateException exception)
+            {
+                return GenerateErrorReport(exception);
+            }
+
+            return null;
+        }
+
+        public void DownloadFile(string path)
+        {
+            lock (locker)
+            {
+                Get(path, new InfoForDownload(HostName, HostPort, PathToDownload));
+            }
+        }
+
+        public void Get(string path, InfoForDownload infoForDownload)
+        {
             TcpClient client = null;
             const int request = 2;
 
             try
             {
-                client = new TcpClient(HostName, int.Parse(HostPort));
+                client = new TcpClient(
+                    infoForDownload.FixedHostName,
+                    int.Parse(infoForDownload.FixedHostPort));
             }
             catch (SocketException)
             {
-                throw new ConnectException();
+                throw new ConnectException("Не удалось подключиться к серверу - " +
+                    $"{path}");
             }
 
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
@@ -142,18 +195,20 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 client.Close();
-                throw new ServerErrorException();
+                throw new ServerErrorException("Не удалось выполнить запрос для " +
+                    $"{path}");
             }
 
             if (size == -1)
             {
                 client.Close();
-                throw new FileNotExistException();
+                throw new FileNotExistException("Не удалось выполнить запрос для " +
+                    $"{path}");
             }
 
             try
             {
-                DownloadFile(pathToDownload, client);
+                Download(infoForDownload.FixedPathToDownload, client, path);
             }
             catch (Exception)
             {
@@ -162,12 +217,8 @@ namespace SimpleFTP_Client
 
             client.Close();
         }
-
-        /// <summary>
-        /// Скачивание файла.
-        /// </summary>
-        /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
-        private void DownloadFile(string pathToDownload, TcpClient client)
+        
+        private void Download(string pathToDownload, TcpClient client, string path)
         {
             FileStream fileStream = null;
 
@@ -177,14 +228,30 @@ namespace SimpleFTP_Client
             }
             catch (Exception exception)
             {
-                MessageBox.Show(exception.Message);
-                throw new Exception("ошибка скачивания файла", exception);
+                throw new Exception($"Не удалось скачать файл - {path}\n" +
+                    $"{exception.Message}", exception);
             }
 
             client.GetStream().CopyTo(fileStream);
-            fileStream.Flush();
+
+            lock (saveLocker)
+            {
+                fileStream.Flush();
+            }
 
             fileStream.Close();
+        }
+
+        private string GenerateErrorReport(AggregateException exception)
+        {
+            string report = "";
+
+            foreach (var e in exception.InnerExceptions)
+            {
+                report += $"{e.Message}\n\n";
+            }
+
+            return report;
         }
     }
 }
