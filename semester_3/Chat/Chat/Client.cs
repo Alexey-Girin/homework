@@ -34,8 +34,8 @@ namespace Chat
         /// <summary>
         /// Конструктор экземпляра класса <see cref="Client"/>.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="port"></param>
+        /// <param name="name">Адрес сервера.</param>
+        /// <param name="port">Прослушиваемый порт.</param>
         public Client(string name, int port)
         {
             this.name = name;
@@ -94,7 +94,7 @@ namespace Chat
             {
                 var reader = new StreamReader(client.GetStream());
                 string message = await reader.ReadLineAsync();
-                Console.WriteLine(message);
+                Console.WriteLine($"собеседник: {message}");
 
                 if (message == "exit")
                 {

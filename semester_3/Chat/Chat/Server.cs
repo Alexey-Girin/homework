@@ -50,19 +50,21 @@ namespace Chat
         /// <summary>
         /// Метод, запускающий сервер.
         /// </summary>
-        public async void Start()
+        public void Start()
         {
             listener.Start();
 
             try
             {
-                client = await listener.AcceptTcpClientAsync();
+                client = listener.AcceptTcpClient();
             }
             catch (InvalidOperationException)
             {
                 Console.WriteLine("ошибка подключения");
                 return;
             }
+
+            Console.WriteLine($"ваш собеседник: {((IPEndPoint)client.Client.RemoteEndPoint).Address}\n");
 
             var tasks = new Task[2];
 
@@ -102,7 +104,7 @@ namespace Chat
             {
                 var reader = new StreamReader(client.GetStream());
                 string message = await reader.ReadLineAsync();
-                Console.WriteLine(message);
+                Console.WriteLine($"собеседник: {message}");
 
                 if (message == "exit")
                 {

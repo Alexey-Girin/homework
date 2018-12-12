@@ -8,7 +8,7 @@ namespace Chat
         {
             if (args.Length == 0)
             {
-                Console.WriteLine("ошибка");
+                Console.WriteLine("ошибка с параметрами");
                 return;
             }
 
@@ -25,7 +25,7 @@ namespace Chat
                 return;
             }
 
-            Console.WriteLine("ошибка");
+            Console.WriteLine("ошибка с параметрами");
         }
     }
 }
