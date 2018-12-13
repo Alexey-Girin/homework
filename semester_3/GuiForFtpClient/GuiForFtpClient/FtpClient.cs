@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace SimpleFTP_Client
 {
@@ -38,11 +39,11 @@ namespace SimpleFTP_Client
 
         public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
 
-        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
-            new ObservableCollection<string>();
+        public List<string> FilesWhichDownloadNow { get; } =
+            new List<string>();
 
-        public ObservableCollection<string> FilesWhichDownloaded { get; } =
-           new ObservableCollection<string>();
+        public List<string> FilesWhichDownloaded { get; } =
+           new List<string>();
 
         public static readonly DependencyProperty CurrentDirectoryProperty;
 
@@ -87,9 +88,6 @@ namespace SimpleFTP_Client
         {
             Files.Clear();
             CurrentDirectory = null;
-
-            FilesWhichDownloadNow.Clear();
-            FilesWhichDownloaded.Clear();
         }
 
         public void List(string path)
@@ -197,7 +195,11 @@ namespace SimpleFTP_Client
 
         public void Get(string path, InfoForDownload infoForDownload)
         {
-            AddFileToFilesWhichDownloadNow(path);
+            lock (filesWhichDownloadNowLocker)
+            {
+                FilesWhichDownloadNow.Add(path);
+            }
+
             TcpClient client = null;
             const int request = 2;
 
@@ -209,7 +211,11 @@ namespace SimpleFTP_Client
             }
             catch (SocketException)
             {
-                RemoveFileFromFilesWhichDownloadNow(path);
+                lock (filesWhichDownloadNowLocker)
+                {
+                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+                }
+
                 throw new ConnectException("Не удалось подключиться к серверу - " +
                     $"{path}");
             }
@@ -229,7 +235,12 @@ namespace SimpleFTP_Client
             catch (ArgumentNullException)
             {
                 client.Close();
-                RemoveFileFromFilesWhichDownloadNow(path);
+
+                lock (filesWhichDownloadNowLocker)
+                {
+                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+                }
+
                 throw new ServerErrorException("Не удалось выполнить запрос для " +
                     $"{path}");
             }
@@ -237,7 +248,12 @@ namespace SimpleFTP_Client
             if (size == -1)
             {
                 client.Close();
-                RemoveFileFromFilesWhichDownloadNow(path);
+
+                lock (filesWhichDownloadNowLocker)
+                {
+                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+                }
+
                 throw new FileNotExistException("Не удалось выполнить запрос для " +
                     $"{path}");
             }
@@ -248,13 +264,25 @@ namespace SimpleFTP_Client
             }
             catch (Exception)
             {
-                RemoveFileFromFilesWhichDownloadNow(path);
+                lock (filesWhichDownloadNowLocker)
+                {
+                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+                }
+
                 throw;
             }
 
             client.Close();
-            RemoveFileFromFilesWhichDownloadNow(path);
-            AddFileToFilesWhichDownloaded(path);
+
+            lock (filesWhichDownloadNowLocker)
+            {
+                FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+            }
+
+            lock (filesWhichDownloadedLocker)
+            {
+                FilesWhichDownloaded.Add(path);
+            }
         }
 
         private void Download(string pathToDownload, TcpClient client, string path)
@@ -263,7 +291,7 @@ namespace SimpleFTP_Client
 
             try
             {
-                fileStream = File.OpenWrite(pathToDownload);
+                fileStream = File.OpenWrite($"{pathToDownload}\\{GetFileName(path)}");
             }
             catch (Exception exception)
             {
@@ -293,28 +321,19 @@ namespace SimpleFTP_Client
             return report;
         }
 
-        private void AddFileToFilesWhichDownloadNow(string path)
+        private string GetFileName(string path)
         {
-            lock (filesWhichDownloadNowLocker)
-            {
-                FilesWhichDownloadNow.Add(path);
-            }
-        }
+            int index = -1;
 
-        private void RemoveFileFromFilesWhichDownloadNow(string path)
-        {
-            lock (filesWhichDownloadNowLocker)
+            for (int i = 0; i < path.Length; i++)
             {
-                FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
+                if (path[i] == '\\')
+                {
+                    index = i;
+                }
             }
-        }
 
-        private void AddFileToFilesWhichDownloaded(string path)
-        {
-            lock (filesWhichDownloadedLocker)
-            {
-                FilesWhichDownloaded.Add(path);
-            }
+            return path.Substring(index + 1);
         }
     }
 }
