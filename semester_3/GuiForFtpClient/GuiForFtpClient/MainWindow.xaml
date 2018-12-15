@@ -103,8 +103,9 @@
                     <RowDefinition Height="1*"/>
                     <RowDefinition Height="7*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Скачиваются:" Grid.Row="0"
-                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <Button Click="DownloadButtonClick"/>
+                <!--<TextBlock Text="Скачиваются:" Grid.Row="0"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>-->
                 <ListBox ItemsSource="{Binding FilesWhichDownloadNow, Mode=OneWay}" Grid.Row="1"/>
                 <TextBlock Text="Скачались:" Grid.Row="2"
                            Style="{StaticResource SimpleTextBlockStyle}"/>

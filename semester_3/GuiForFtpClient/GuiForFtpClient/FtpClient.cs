@@ -8,6 +8,7 @@ using System.Windows;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace SimpleFTP_Client
 {
@@ -38,12 +39,6 @@ namespace SimpleFTP_Client
         }
 
         public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
-
-        public List<string> FilesWhichDownloadNow { get; } =
-            new List<string>();
-
-        public List<string> FilesWhichDownloaded { get; } =
-           new List<string>();
 
         public static readonly DependencyProperty CurrentDirectoryProperty;
 
@@ -161,6 +156,7 @@ namespace SimpleFTP_Client
             }
 
             var tasks = new Task[listOfFiles.Count];
+            var task = Task.Factory.StartNew(() => MaintainDownloadProgress());
 
             for (int i = 0; i < listOfFiles.Count; i++)
             {
@@ -176,6 +172,9 @@ namespace SimpleFTP_Client
             try
             {
                 Task.WaitAll(tasks);
+                isEnd = true;
+                task.Wait();
+
             }
             catch (AggregateException exception)
             {
@@ -195,11 +194,6 @@ namespace SimpleFTP_Client
 
         public void Get(string path, InfoForDownload infoForDownload)
         {
-            lock (filesWhichDownloadNowLocker)
-            {
-                FilesWhichDownloadNow.Add(path);
-            }
-
             TcpClient client = null;
             const int request = 2;
 
@@ -211,11 +205,6 @@ namespace SimpleFTP_Client
             }
             catch (SocketException)
             {
-                lock (filesWhichDownloadNowLocker)
-                {
-                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
-                }
-
                 throw new ConnectException("Не удалось подключиться к серверу - " +
                     $"{path}");
             }
@@ -236,11 +225,6 @@ namespace SimpleFTP_Client
             {
                 client.Close();
 
-                lock (filesWhichDownloadNowLocker)
-                {
-                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
-                }
-
                 throw new ServerErrorException("Не удалось выполнить запрос для " +
                     $"{path}");
             }
@@ -248,11 +232,6 @@ namespace SimpleFTP_Client
             if (size == -1)
             {
                 client.Close();
-
-                lock (filesWhichDownloadNowLocker)
-                {
-                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
-                }
 
                 throw new FileNotExistException("Не удалось выполнить запрос для " +
                     $"{path}");
@@ -264,25 +243,10 @@ namespace SimpleFTP_Client
             }
             catch (Exception)
             {
-                lock (filesWhichDownloadNowLocker)
-                {
-                    FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
-                }
-
                 throw;
             }
 
             client.Close();
-
-            lock (filesWhichDownloadNowLocker)
-            {
-                FilesWhichDownloadNow.RemoveAt(FilesWhichDownloadNow.IndexOf(path));
-            }
-
-            lock (filesWhichDownloadedLocker)
-            {
-                FilesWhichDownloaded.Add(path);
-            }
         }
 
         private void Download(string pathToDownload, TcpClient client, string path)
@@ -299,6 +263,11 @@ namespace SimpleFTP_Client
                     $"{exception.Message}", exception);
             }
 
+            lock (updateProgressLocker)
+            {
+                updateProgress.Enqueue(() => FilesWhichDownloadNow.Add(path));
+            }
+
             client.GetStream().CopyTo(fileStream);
 
             lock (saveLocker)
@@ -307,6 +276,12 @@ namespace SimpleFTP_Client
             }
 
             fileStream.Close();
+
+            lock (updateProgressLocker)
+            {
+                updateProgress.Enqueue(() => FilesWhichDownloadNow.Remove(path));
+                updateProgress.Enqueue(() => FilesWhichDownloaded.Add(path));
+            }
         }
 
         private string GenerateErrorReport(AggregateException exception)
@@ -335,5 +310,43 @@ namespace SimpleFTP_Client
 
             return path.Substring(index + 1);
         }
+
+        private async void MaintainDownloadProgress()
+        {
+            while (true)
+            {
+                if (updateProgress.IsEmpty)
+                {
+                    if (isEnd)
+                    {
+                        return;
+                    }
+
+                    continue;
+                }
+
+                Action action = null;
+
+                lock (updateProgressLocker)
+                {
+                    updateProgress.TryDequeue(out action);
+                }
+
+                await Dispatcher.InvokeAsync(action);
+            }
+        }
+
+        public ConcurrentQueue<Action> updateProgress =
+            new ConcurrentQueue<Action>();
+
+        private object updateProgressLocker = new object();
+
+        private bool isEnd = false;
+
+        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
+            new ObservableCollection<string>();
+
+        public ObservableCollection<string> FilesWhichDownloaded { get; } =
+            new ObservableCollection<string>();
     }
 }
