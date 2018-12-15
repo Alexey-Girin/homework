@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,7 +22,7 @@ namespace GuiForFtpClient
 
         private string defaultPath = @"C:\";
 
-        private void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var fileInfo = (sender as ListBox).SelectedItem as FileInfo;
 
@@ -32,24 +33,24 @@ namespace GuiForFtpClient
 
             if (fileInfo.IsDirectory)
             {
-                GetNewDirectory(fileInfo.Name);
+                await GetNewDirectory(fileInfo.Name);
                 return;
             }
 
-            DownloadFile(fileInfo.Name);
+            await DownloadFiles(fileInfo.Name);
         }
 
-        private void GetNewDirectory(string path)
+        private async Task GetNewDirectory(string path)
         {
             if (path == "...")
             {
-                Back();
+                await Back();
                 return;
             }
 
             try
             {
-                client.List(path);
+                await client.List(path);
             }
             catch (Exception exception)
             {
@@ -60,7 +61,7 @@ namespace GuiForFtpClient
             pathHistory.Push(path);
         }
 
-        private void Back()
+        private async Task Back()
         {
             if (pathHistory.Count == 1)
             {
@@ -70,7 +71,7 @@ namespace GuiForFtpClient
             try
             {
                 pathHistory.Pop();
-                client.List(pathHistory.Peek());
+                await client.List(pathHistory.Peek());
             }
             catch (Exception exception)
             {
@@ -78,34 +79,24 @@ namespace GuiForFtpClient
             }
         }
 
-        private void DownloadFile(string path)
+        private async Task DownloadFiles(string path)
         {
-            try
-            {
-                client.DownloadFile(path);
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.Message);
-            }
+           /* var errorReport = */await client.DownloadFiles(path);
+
+            //if (errorReport == null)
+            //{
+            //    return;
+            //}
+
+            //MessageBox.Show(errorReport);
         }
 
-        private void DownloadButtonClick(object sender, RoutedEventArgs e)
-        {
-            var errorReport = client.DownloadAllFilesInDirectory();
+        private async void DownloadButtonClick(object sender, RoutedEventArgs e) => await DownloadFiles(null);
 
-            if (errorReport == null)
-            {
-                return;
-            }
-
-            MessageBox.Show(errorReport);
-        }
-
-        private void ConnectButtonClick(object sender, RoutedEventArgs e)
+        private async void ConnectButtonClick(object sender, RoutedEventArgs e)
         {
             client.Reset();
-            GetNewDirectory(defaultPath);
+            await GetNewDirectory(defaultPath);
         }
     }
 }

@@ -48,13 +48,13 @@ namespace SimpleFTP_Client
             set { SetValue(CurrentDirectoryProperty, value); }
         }
 
-        private object locker = new object();
+        private object updateProgressLocker = new object();
 
-        private object saveLocker = new object();
+        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
+            new ObservableCollection<string>();
 
-        private object filesWhichDownloadNowLocker = new object();
-
-        private object filesWhichDownloadedLocker = new object();
+        public ObservableCollection<string> FilesWhichDownloaded { get; } =
+            new ObservableCollection<string>();
 
         static FtpClient()
         {
@@ -83,12 +83,13 @@ namespace SimpleFTP_Client
         {
             Files.Clear();
             CurrentDirectory = null;
+            FilesWhichDownloaded.Clear();
         }
 
-        public void List(string path)
+        public async Task List(string path)
         {
             TcpClient client = null;
-            const int request = 1;
+            const char request = '1';
 
             try
             {
@@ -103,14 +104,14 @@ namespace SimpleFTP_Client
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
             var streamReader = new StreamReader(client.GetStream());
 
-            streamWriter.Write(request);
-            streamWriter.WriteLine(path);
+            await streamWriter.WriteAsync(request);
+            await streamWriter.WriteLineAsync(path);
 
             int size = -1;
 
             try
             {
-                size = int.Parse(streamReader.ReadLine());
+                size = int.Parse(await streamReader.ReadLineAsync());
             }
             catch (ArgumentNullException)
             {
@@ -129,73 +130,44 @@ namespace SimpleFTP_Client
 
             for (int i = 0; i < size; i++)
             {
-                string fileName = streamReader.ReadLine();
-                bool IsDir = "True" == streamReader.ReadLine();
+                string fileName = await streamReader.ReadLineAsync();
+                bool IsDir = "True" == await streamReader.ReadLineAsync();
                 Files.Add(new FileInfo(fileName, IsDir));
             }
 
             client.Close();
         }
 
-        public string DownloadAllFilesInDirectory()
+        public async Task DownloadFiles(string path)
         {
-            var listOfFiles = new List<FileInfo>();
-            InfoForDownload infoForDownload = null;
+            var listOfFiles = new List<string>();
+            InfoForDownload infoForDownload = new InfoForDownload(HostName, HostPort, PathToDownload);
 
-            lock (locker)
+            if (path != null)
             {
-                infoForDownload = new InfoForDownload(HostName, HostPort, PathToDownload);
+                await Get(path, infoForDownload);
+                return;
             }
 
             foreach (var file in Files)
             {
                 if (!file.IsDirectory)
                 {
-                    listOfFiles.Add(file);
+                    listOfFiles.Add(file.Name);
                 }
             }
-
-            var tasks = new Task[listOfFiles.Count];
-            var task = Task.Factory.StartNew(() => MaintainDownloadProgress());
 
             for (int i = 0; i < listOfFiles.Count; i++)
             {
                 int j = i;
-
-                tasks[j] = Task.Factory.StartNew(() => Get(
-                    listOfFiles[j].Name, new InfoForDownload(
-                        infoForDownload.FixedHostName,
-                        infoForDownload.FixedHostPort,
-                        infoForDownload.FixedPathToDownload)));
-            }
-
-            try
-            {
-                Task.WaitAll(tasks);
-                isEnd = true;
-                task.Wait();
-
-            }
-            catch (AggregateException exception)
-            {
-                return GenerateErrorReport(exception);
-            }
-
-            return null;
-        }
-
-        public void DownloadFile(string path)
-        {
-            lock (locker)
-            {
-                Get(path, new InfoForDownload(HostName, HostPort, PathToDownload));
+                await Task.Factory.StartNew(() => Get(listOfFiles[j], infoForDownload));
             }
         }
 
-        public void Get(string path, InfoForDownload infoForDownload)
+        public async Task Get(string path, InfoForDownload infoForDownload)
         {
             TcpClient client = null;
-            const int request = 2;
+            const char request = '2';
 
             try
             {
@@ -212,8 +184,8 @@ namespace SimpleFTP_Client
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
             var streamReader = new StreamReader(client.GetStream());
 
-            streamWriter.Write(request);
-            streamWriter.WriteLine(path);
+            await streamWriter.WriteAsync(request);
+            await streamWriter.WriteLineAsync(path);
 
             long size = -1;
 
@@ -239,7 +211,7 @@ namespace SimpleFTP_Client
 
             try
             {
-                Download(infoForDownload.FixedPathToDownload, client, path);
+                await DownloadFile(infoForDownload.FixedPathToDownload, client, path);
             }
             catch (Exception)
             {
@@ -249,7 +221,7 @@ namespace SimpleFTP_Client
             client.Close();
         }
 
-        private void Download(string pathToDownload, TcpClient client, string path)
+        private async Task DownloadFile(string pathToDownload, TcpClient client, string path)
         {
             FileStream fileStream = null;
 
@@ -265,22 +237,17 @@ namespace SimpleFTP_Client
 
             lock (updateProgressLocker)
             {
-                updateProgress.Enqueue(() => FilesWhichDownloadNow.Add(path));
+                Dispatcher.Invoke(() => FilesWhichDownloadNow.Add(path));
             }
 
-            client.GetStream().CopyTo(fileStream);
-
-            lock (saveLocker)
-            {
-                fileStream.Flush();
-            }
-
+            await client.GetStream().CopyToAsync(fileStream);
+            await fileStream.FlushAsync();
             fileStream.Close();
 
             lock (updateProgressLocker)
             {
-                updateProgress.Enqueue(() => FilesWhichDownloadNow.Remove(path));
-                updateProgress.Enqueue(() => FilesWhichDownloaded.Add(path));
+                Dispatcher.Invoke(() => FilesWhichDownloadNow.Remove(path));
+                Dispatcher.Invoke(() => FilesWhichDownloaded.Add(path));
             }
         }
 
@@ -310,43 +277,5 @@ namespace SimpleFTP_Client
 
             return path.Substring(index + 1);
         }
-
-        private async void MaintainDownloadProgress()
-        {
-            while (true)
-            {
-                if (updateProgress.IsEmpty)
-                {
-                    if (isEnd)
-                    {
-                        return;
-                    }
-
-                    continue;
-                }
-
-                Action action = null;
-
-                lock (updateProgressLocker)
-                {
-                    updateProgress.TryDequeue(out action);
-                }
-
-                await Dispatcher.InvokeAsync(action);
-            }
-        }
-
-        public ConcurrentQueue<Action> updateProgress =
-            new ConcurrentQueue<Action>();
-
-        private object updateProgressLocker = new object();
-
-        private bool isEnd = false;
-
-        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
-            new ObservableCollection<string>();
-
-        public ObservableCollection<string> FilesWhichDownloaded { get; } =
-            new ObservableCollection<string>();
     }
 }
