@@ -16,7 +16,7 @@ namespace GuiForFtpClient
         /// <summary>
         /// FTP-клиент.
         /// </summary>
-        public FtpClient Client = new FtpClient();
+        public FtpClient Client { get; } = new FtpClient();
 
         /// <summary>
         /// Коллекция файлов и папок.
