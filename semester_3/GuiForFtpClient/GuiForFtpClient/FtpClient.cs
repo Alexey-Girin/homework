@@ -1,103 +1,42 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
-using GuiForFtpClient.Extentions;
 using SimpleFTP_Client.Exceptions;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Threading;
+using System.Collections.Generic;
 
 namespace SimpleFTP_Client
 {
     public class FtpClient : DependencyObject
     {
-        public static readonly DependencyProperty HostNameProperty;
-
-        public static readonly DependencyProperty HostPortProperty;
-
-        public static readonly DependencyProperty PathToDownloadProperty;
-
-        public string HostName
-        {
-            get { return (string)GetValue(HostNameProperty); }
-            set { SetValue(HostNameProperty, value); }
-        }
-
-        public string HostPort
-        {
-            get { return (string)GetValue(HostPortProperty); }
-            set { SetValue(HostPortProperty, value); }
-        }
-
-        public string PathToDownload
-        {
-            get { return (string)GetValue(PathToDownloadProperty); }
-            set { SetValue(PathToDownloadProperty, value); }
-        }
-
-        public ObservableCollection<FileInfo> Files { get; } = new ObservableCollection<FileInfo>();
-
-        public static readonly DependencyProperty CurrentDirectoryProperty;
-
-        public string CurrentDirectory
-        {
-            get { return (string)GetValue(CurrentDirectoryProperty); }
-            set { SetValue(CurrentDirectoryProperty, value); }
-        }
-
-        private object updateProgressLocker = new object();
-
         public ObservableCollection<string> FilesWhichDownloadNow { get; } =
             new ObservableCollection<string>();
 
         public ObservableCollection<string> FilesWhichDownloaded { get; } =
             new ObservableCollection<string>();
 
-        static FtpClient()
-        {
-            HostNameProperty = DependencyProperty.Register(
-                "HostName",
-                typeof(string),
-                typeof(FtpClient));
-
-            HostPortProperty = DependencyProperty.Register(
-                "HostPort",
-                typeof(string),
-                typeof(FtpClient));
-
-            PathToDownloadProperty = DependencyProperty.Register(
-                "PathToDownload",
-                typeof(string),
-                typeof(FtpClient));
-
-            CurrentDirectoryProperty = DependencyProperty.Register(
-                "CurrentDirectory",
-                typeof(string),
-                typeof(FtpClient));
-        }
+        public ObservableCollection<FileDownloadError> DownloadErrors { get; } =
+           new ObservableCollection<FileDownloadError>();
 
         public void Reset()
         {
-            Files.Clear();
-            CurrentDirectory = null;
             FilesWhichDownloaded.Clear();
+            DownloadErrors.Clear();
         }
 
-        public async Task List(string path)
+        public async Task<List<FileInfo>> List(string path, ServerInfo serverInfo)
         {
             TcpClient client = null;
             const char request = '1';
 
             try
             {
-                client = new TcpClient(HostName, int.Parse(HostPort));
+                client = new TcpClient(serverInfo.HostName, serverInfo.HostPort);
             }
             catch (SocketException)
             {
-                Reset();
                 throw new ConnectException("Не удалось подключиться к серверу");
             }
 
@@ -125,8 +64,7 @@ namespace SimpleFTP_Client
                 throw new DirectoryNotExistException("Не удалось выполнить запрос");
             }
 
-            Files.Update();
-            CurrentDirectory = path;
+            var Files = new List<FileInfo>() { new FileInfo("...", true) };
 
             for (int i = 0; i < size; i++)
             {
@@ -136,49 +74,24 @@ namespace SimpleFTP_Client
             }
 
             client.Close();
+            return Files;
         }
 
-        public async Task DownloadFiles(string path)
-        {
-            var listOfFiles = new List<string>();
-            InfoForDownload infoForDownload = new InfoForDownload(HostName, HostPort, PathToDownload);
-
-            if (path != null)
-            {
-                await Get(path, infoForDownload);
-                return;
-            }
-
-            foreach (var file in Files)
-            {
-                if (!file.IsDirectory)
-                {
-                    listOfFiles.Add(file.Name);
-                }
-            }
-
-            for (int i = 0; i < listOfFiles.Count; i++)
-            {
-                int j = i;
-                await Task.Factory.StartNew(() => Get(listOfFiles[j], infoForDownload));
-            }
-        }
-
-        public async Task Get(string path, InfoForDownload infoForDownload)
+        public async Task Get(string path, ServerInfo serverInfo)
         {
             TcpClient client = null;
             const char request = '2';
 
             try
             {
-                client = new TcpClient(
-                    infoForDownload.FixedHostName,
-                    int.Parse(infoForDownload.FixedHostPort));
+                client = new TcpClient(serverInfo.HostName, serverInfo.HostPort);
             }
-            catch (SocketException)
+            catch (SocketException exception)
             {
-                throw new ConnectException("Не удалось подключиться к серверу - " +
-                    $"{path}");
+                await Dispatcher.InvokeAsync(()
+                    => DownloadErrors.Add(new FileDownloadError(exception,
+                        $"Не удалось подключиться к серверу. Файл: {path}")));
+                return;
             }
 
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
@@ -193,30 +106,25 @@ namespace SimpleFTP_Client
             {
                 size = long.Parse(streamReader.ReadLine());
             }
-            catch (ArgumentNullException)
+            catch (ArgumentNullException exception)
             {
                 client.Close();
-
-                throw new ServerErrorException("Не удалось выполнить запрос для " +
-                    $"{path}");
+                await Dispatcher.InvokeAsync(()
+                    => DownloadErrors.Add(new FileDownloadError(exception,
+                        $"Не удалось выполнить запрос для {path}")));
+                return;
             }
 
             if (size == -1)
             {
                 client.Close();
-
-                throw new FileNotExistException("Не удалось выполнить запрос для " +
-                    $"{path}");
+                await Dispatcher.InvokeAsync(()
+                    => DownloadErrors.Add(new FileDownloadError(null,
+                        $"Не удалось выполнить запрос для {path}")));
+                return;
             }
 
-            try
-            {
-                await DownloadFile(infoForDownload.FixedPathToDownload, client, path);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            await DownloadFile(serverInfo.PathToDownload, client, path);
 
             client.Close();
         }
@@ -225,42 +133,32 @@ namespace SimpleFTP_Client
         {
             FileStream fileStream = null;
 
+            if (pathToDownload != string.Empty)
+            {
+                pathToDownload = $"{pathToDownload}\\{GetFileName(path)}";
+            }
+
             try
             {
-                fileStream = File.OpenWrite($"{pathToDownload}\\{GetFileName(path)}");
+                fileStream = File.OpenWrite(pathToDownload);
             }
             catch (Exception exception)
             {
-                throw new Exception($"Не удалось скачать файл - {path}\n" +
-                    $"{exception.Message}", exception);
+                await Dispatcher.InvokeAsync(()
+                    => DownloadErrors.Add(new FileDownloadError(exception,
+                        $"Не удалось скачать файл - {path}\n{exception.Message}")));
+                return;
             }
 
-            lock (updateProgressLocker)
-            {
-                Dispatcher.Invoke(() => FilesWhichDownloadNow.Add(path));
-            }
+            Dispatcher.Invoke(() => FilesWhichDownloadNow.Add(path));
 
             await client.GetStream().CopyToAsync(fileStream);
             await fileStream.FlushAsync();
+
             fileStream.Close();
 
-            lock (updateProgressLocker)
-            {
-                Dispatcher.Invoke(() => FilesWhichDownloadNow.Remove(path));
-                Dispatcher.Invoke(() => FilesWhichDownloaded.Add(path));
-            }
-        }
-
-        private string GenerateErrorReport(AggregateException exception)
-        {
-            string report = "";
-
-            foreach (var e in exception.InnerExceptions)
-            {
-                report += $"{e.Message}\n\n";
-            }
-
-            return report;
+            Dispatcher.Invoke(() => FilesWhichDownloadNow.Remove(path));
+            Dispatcher.Invoke(() => FilesWhichDownloaded.Add(path));
         }
 
         private string GetFileName(string path)

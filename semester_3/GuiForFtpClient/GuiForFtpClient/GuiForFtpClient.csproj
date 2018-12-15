@@ -55,6 +55,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FileDownloadError.cs" />
+    <Compile Include="ServerInfo.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -63,6 +65,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ClientViewModel.cs" />
     <Compile Include="Exceptions\ConnectException.cs" />
     <Compile Include="Exceptions\DirectoryNotExistException.cs" />
     <Compile Include="Exceptions\FileNotExistException.cs" />
@@ -70,7 +73,6 @@
     <Compile Include="Extentions\ObservableCollectionExtention.cs" />
     <Compile Include="FileInfo.cs" />
     <Compile Include="FtpClient.cs" />
-    <Compile Include="InfoForDownload.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
