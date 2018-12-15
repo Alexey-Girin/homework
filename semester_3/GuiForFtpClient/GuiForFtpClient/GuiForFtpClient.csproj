@@ -70,7 +70,6 @@
     <Compile Include="Exceptions\DirectoryNotExistException.cs" />
     <Compile Include="Exceptions\FileNotExistException.cs" />
     <Compile Include="Exceptions\ServerErrorException.cs" />
-    <Compile Include="Extentions\ObservableCollectionExtention.cs" />
     <Compile Include="FileInfo.cs" />
     <Compile Include="FtpClient.cs" />
     <Compile Include="MainWindow.xaml.cs">

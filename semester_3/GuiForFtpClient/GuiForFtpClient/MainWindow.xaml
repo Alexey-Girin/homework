@@ -59,7 +59,7 @@
                              MouseDoubleClick="ListOfFilesMouseDoubleClick">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Path=Name}"/>
+                                <TextBlock Text="{Binding Path=FileName}"/>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -105,7 +105,7 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="Скачиваются:" Grid.Row="0"
                            Style="{StaticResource SimpleTextBlockStyle}"/>
-                <ListBox ItemsSource="{Binding FilesWhichDownloadNow}" Grid.Row="1"/>
+                <ListBox ItemsSource="{Binding FilesWhichDownloadingNow}" Grid.Row="1"/>
                 <TextBlock Text="Скачались:" Grid.Row="2"
                            Style="{StaticResource SimpleTextBlockStyle}"/>
                 <ListBox ItemsSource="{Binding FilesWhichDownloaded}" Grid.Row="3"/>

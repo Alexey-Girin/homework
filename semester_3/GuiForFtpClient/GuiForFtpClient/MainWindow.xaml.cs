@@ -15,7 +15,7 @@ namespace GuiForFtpClient
 
         private ClientViewModel clientViewModel = new ClientViewModel();
 
-        private string defaultPath = @"C:\";
+        private const string defaultPath = @"...\";
 
         private async void ListOfFilesMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -26,14 +26,15 @@ namespace GuiForFtpClient
 
             if (fileInfo.IsDirectory)
             {
-                await clientViewModel.GetDirectory(fileInfo.Name);
+                await clientViewModel.GetDirectory(fileInfo.Path);
                 return;
             }
 
-            clientViewModel.DownloadFiles(fileInfo.Name);
+            clientViewModel.DownloadFiles(fileInfo);
         }
 
-        private void DownloadButtonClick(object sender, RoutedEventArgs e) => clientViewModel.DownloadFiles(null);      
+        private void DownloadButtonClick(object sender, RoutedEventArgs e)
+            => clientViewModel.DownloadFiles(null);
 
         private async void ConnectButtonClick(object sender, RoutedEventArgs e)
         {

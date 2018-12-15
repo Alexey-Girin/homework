@@ -9,23 +9,44 @@ using System.Collections.Generic;
 
 namespace SimpleFTP_Client
 {
+    /// <summary>
+    /// FTP-клиент.
+    /// </summary>
     public class FtpClient : DependencyObject
     {
-        public ObservableCollection<string> FilesWhichDownloadNow { get; } =
+        /// <summary>
+        /// Коллекция скачиваемых файлов.
+        /// </summary>
+        public ObservableCollection<string> FilesWhichDownloadingNow { get; } =
             new ObservableCollection<string>();
 
+        /// <summary>
+        /// Коллекция скачанных файлов.
+        /// </summary>
         public ObservableCollection<string> FilesWhichDownloaded { get; } =
             new ObservableCollection<string>();
 
+        /// <summary>
+        /// Коллекция ошибок, возникших при скачивании файлов.
+        /// </summary>
         public ObservableCollection<FileDownloadError> DownloadErrors { get; } =
-           new ObservableCollection<FileDownloadError>();
+            new ObservableCollection<FileDownloadError>();
 
+        /// <summary>
+        /// Удаление информации о скачанных файлов и ошибках скачивания.
+        /// </summary>
         public void Reset()
         {
             FilesWhichDownloaded.Clear();
             DownloadErrors.Clear();
         }
 
+        /// <summary>
+        /// Запрос на листинг файлов и папок в директории на сервере.
+        /// </summary>
+        /// <param name="path">Путь к директории на сервере.</param>
+        /// <param name="serverInfo">Информация, необходимая для подключения к серверу.</param>
+        /// <returns>Информация о файлах и папках.</returns>
         public async Task<List<FileInfo>> List(string path, ServerInfo serverInfo)
         {
             TcpClient client = null;
@@ -77,7 +98,12 @@ namespace SimpleFTP_Client
             return Files;
         }
 
-        public async Task Get(string path, ServerInfo serverInfo)
+        /// <summary>
+        /// Запрос на скачивание файла с сервера.
+        /// </summary>
+        /// <param name="fileInfo">Информация о файле.</param>
+        /// <param name="serverInfo">Информация, необходимая для скачивания файла.</param>
+        public async Task Get(FileInfo fileInfo, ServerInfo serverInfo)
         {
             TcpClient client = null;
             const char request = '2';
@@ -90,7 +116,7 @@ namespace SimpleFTP_Client
             {
                 await Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
-                        $"Не удалось подключиться к серверу. Файл: {path}")));
+                        $"Не удалось подключиться к серверу. Файл: {fileInfo.Path}")));
                 return;
             }
 
@@ -98,7 +124,7 @@ namespace SimpleFTP_Client
             var streamReader = new StreamReader(client.GetStream());
 
             await streamWriter.WriteAsync(request);
-            await streamWriter.WriteLineAsync(path);
+            await streamWriter.WriteLineAsync(fileInfo.Path);
 
             long size = -1;
 
@@ -111,7 +137,7 @@ namespace SimpleFTP_Client
                 client.Close();
                 await Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
-                        $"Не удалось выполнить запрос для {path}")));
+                        $"Не удалось выполнить запрос для {fileInfo.Path}")));
                 return;
             }
 
@@ -120,22 +146,28 @@ namespace SimpleFTP_Client
                 client.Close();
                 await Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(null,
-                        $"Не удалось выполнить запрос для {path}")));
+                        $"Не удалось выполнить запрос для {fileInfo.Path}")));
                 return;
             }
 
-            await DownloadFile(serverInfo.PathToDownload, client, path);
+            await DownloadFile(serverInfo.PathToDownload, client, fileInfo);
 
             client.Close();
         }
 
-        private async Task DownloadFile(string pathToDownload, TcpClient client, string path)
+        /// <summary>
+        /// Скачивание файла.
+        /// </summary>
+        /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
+        /// <param name="client">Клиент.</param>
+        /// <param name="fileInfo">Информация, необходимая для скачивания файла.</param>
+        private async Task DownloadFile(string pathToDownload, TcpClient client, FileInfo fileInfo)
         {
             FileStream fileStream = null;
 
             if (pathToDownload != string.Empty)
             {
-                pathToDownload = $"{pathToDownload}\\{GetFileName(path)}";
+                pathToDownload = $"{pathToDownload}\\{fileInfo.FileName}";
             }
 
             try
@@ -146,34 +178,19 @@ namespace SimpleFTP_Client
             {
                 await Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
-                        $"Не удалось скачать файл - {path}\n{exception.Message}")));
+                        $"Не удалось скачать файл - {fileInfo.Path}\n{exception.Message}")));
                 return;
             }
 
-            Dispatcher.Invoke(() => FilesWhichDownloadNow.Add(path));
+            Dispatcher.Invoke(() => FilesWhichDownloadingNow.Add(fileInfo.Path));
 
             await client.GetStream().CopyToAsync(fileStream);
             await fileStream.FlushAsync();
 
             fileStream.Close();
 
-            Dispatcher.Invoke(() => FilesWhichDownloadNow.Remove(path));
-            Dispatcher.Invoke(() => FilesWhichDownloaded.Add(path));
-        }
-
-        private string GetFileName(string path)
-        {
-            int index = -1;
-
-            for (int i = 0; i < path.Length; i++)
-            {
-                if (path[i] == '\\')
-                {
-                    index = i;
-                }
-            }
-
-            return path.Substring(index + 1);
+            Dispatcher.Invoke(() => FilesWhichDownloadingNow.Remove(fileInfo.Path));
+            Dispatcher.Invoke(() => FilesWhichDownloaded.Add(fileInfo.Path));
         }
     }
 }
