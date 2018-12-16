@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace SimpleFTP_Client
+namespace SimpleFtpClient
 {
     /// <summary>
     /// Класс, представляющий информацию о файле или директории.
     /// </summary>
-    public class FileInfo : IComparable
+    public class FileInfo : IComparable<FileInfo>
     {
         /// <summary>
         /// Имя файла или директории.
@@ -39,8 +39,8 @@ namespace SimpleFTP_Client
         /// </summary>
         /// <param name="obj">Объект для сравнения с данным экземпляром.</param>
         /// <returns>Значение, указывающее, каков относительный порядок сравниваемых объектов.</returns>
-        public int CompareTo(object obj)
-            => string.Compare(Path, (obj as FileInfo).Path);
+        public int CompareTo(FileInfo other)
+            => string.Compare(Path, other.Path);
 
         /// <summary>
         /// Получение имени файла или папки из пути.
@@ -48,6 +48,11 @@ namespace SimpleFTP_Client
         /// <returns>Имя файла или папки.</returns>
         private string GetFileName()
         {
+            if (Path == null)
+            {
+                return null;
+            }
+
             int index = -1;
 
             for (int i = 0; i < Path.Length; i++)

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SimpleFTP_Client
+namespace SimpleFtpClient
 {
     /// <summary>
     /// Информация об ошибке скачивания файла.

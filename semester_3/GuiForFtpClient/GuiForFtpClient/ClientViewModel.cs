@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
-using SimpleFTP_Client;
-using SimpleFTP_Client.Exceptions;
+using SimpleFtpClient;
+using SimpleFtpClient.Exceptions;
 
 namespace GuiForFtpClient
 {
@@ -137,7 +137,7 @@ namespace GuiForFtpClient
         }
 
         /// <summary>
-        /// Удалении информации о файлах и папках текущей коллекции.
+        /// Удаление информации о файлах и папках текущей коллекции.
         /// </summary>
         public void Reset()
         {
@@ -204,7 +204,7 @@ namespace GuiForFtpClient
         }
 
         /// <summary>
-        /// Запрос на скачивание файла. Если fileInfo null, скачивание всех файлов в папке,
+        /// Запрос на скачивание файла. Если параметр null, скачивание всех файлов в папке,
         /// на которую смотрит клиент.
         /// </summary>
         /// <param name="fileInfo">Информация о файле.</param>

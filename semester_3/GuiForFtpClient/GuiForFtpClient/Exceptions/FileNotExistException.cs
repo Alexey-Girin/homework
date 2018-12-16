@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SimpleFTP_Client.Exceptions
+namespace SimpleFtpClient.Exceptions
 {
     /// <summary>
     /// Исключение - файла не существует.

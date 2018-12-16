@@ -1,4 +1,4 @@
-﻿namespace SimpleFTP_Client
+﻿namespace SimpleFtpClient
 {
     /// <summary>
     /// Информация, необходимая для выполнения запросов Get и List в <see cref="FtpClient"/>.

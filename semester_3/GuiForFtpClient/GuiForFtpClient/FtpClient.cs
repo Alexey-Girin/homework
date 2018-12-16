@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
-using SimpleFTP_Client.Exceptions;
+using SimpleFtpClient.Exceptions;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace SimpleFTP_Client
+namespace SimpleFtpClient
 {
     /// <summary>
     /// FTP-клиент.
@@ -33,7 +33,7 @@ namespace SimpleFTP_Client
             new ObservableCollection<FileDownloadError>();
 
         /// <summary>
-        /// Удаление информации о скачанных файлов и ошибках скачивания.
+        /// Удаление информации о результатах скачивания.
         /// </summary>
         public void Reset()
         {
