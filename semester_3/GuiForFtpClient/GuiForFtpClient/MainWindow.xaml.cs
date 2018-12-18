@@ -26,20 +26,20 @@ namespace GuiForFtpClient
 
             if (fileInfo.IsDirectory)
             {
-                await clientViewModel.GetDirectory(fileInfo.Path);
+                await clientViewModel.GetDirectory(fileInfo.Path, Dispatcher);
                 return;
             }
 
-            clientViewModel.DownloadFiles(fileInfo);
+            clientViewModel.DownloadFiles(fileInfo, Dispatcher);
         }
 
         private void DownloadButtonClick(object sender, RoutedEventArgs e)
-            => clientViewModel.DownloadFiles(null);
+            => clientViewModel.DownloadFiles(null, Dispatcher);
 
         private async void ConnectButtonClick(object sender, RoutedEventArgs e)
         {
             clientViewModel.Reset();
-            await clientViewModel.GetDirectory(defaultPath);
+            await clientViewModel.GetDirectory(defaultPath, Dispatcher);
         }
     }
 }

@@ -5,16 +5,17 @@ using System.Threading.Tasks;
 using System.Windows;
 using SimpleFtpClient;
 using SimpleFtpClient.Exceptions;
-using GuiForFtpClient.Extentions;
+using GuiForFtpClient.Extensions;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Threading;
 
 namespace GuiForFtpClient
 {
     /// <summary>
     /// View Model для FTP-клиента.
     /// </summary>
-    public class ClientViewModel : DependencyObject, INotifyPropertyChanged
+    public class ClientViewModel : INotifyPropertyChanged
     {
         /// <summary>
         /// FTP-клиент.
@@ -48,6 +49,20 @@ namespace GuiForFtpClient
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
+        /// Уведомление об изменении свойств.
+        /// </summary>
+        /// <param name="changedProperty">Измененное свойство.</param>
+        public void NotifyPropertyChanged([CallerMemberName]string changedProperty = "")
+        {
+            if (PropertyChanged == null)
+            {
+                return;
+            }
+
+            PropertyChanged(this, new PropertyChangedEventArgs(changedProperty));
+        }
+
+        /// <summary>
         /// Директория, на которую "смотрит" клиент.
         /// </summary>
         public string CurrentDirectory
@@ -56,7 +71,7 @@ namespace GuiForFtpClient
             set
             {
                 currentDirectory = value;
-                PropertyChanged(this, new PropertyChangedEventArgs("CurrentDirectory"));
+                NotifyPropertyChanged("CurrentDirectory");
             }
         }
 
@@ -71,7 +86,7 @@ namespace GuiForFtpClient
             set
             {
                 hostName = value;
-                PropertyChanged(this, new PropertyChangedEventArgs("HostName"));
+                NotifyPropertyChanged("HostName");
             }
         }
 
@@ -86,7 +101,7 @@ namespace GuiForFtpClient
             set
             {
                 hostPort = value;
-                PropertyChanged(this, new PropertyChangedEventArgs("HostPort"));
+                NotifyPropertyChanged("HostPort");
             }
         }
 
@@ -101,7 +116,7 @@ namespace GuiForFtpClient
             set
             {
                 pathToDownload = value;
-                PropertyChanged(this, new PropertyChangedEventArgs("PathToDownload"));
+                NotifyPropertyChanged("PathToDownload");
             }
         }
 
@@ -136,7 +151,7 @@ namespace GuiForFtpClient
         /// Запрос на получение списка файлов и папок по заданному пути.
         /// </summary>
         /// <param name="path">Заданный путь.</param>
-        public async Task GetDirectory(string path)
+        public async Task GetDirectory(string path, Dispatcher dispatcher)
         {
             if (FilesWhichDownloadingNow.Count != 0)
             {
@@ -161,7 +176,7 @@ namespace GuiForFtpClient
 
             try
             {
-                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort, Dispatcher));
+                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort, dispatcher));
             }
             catch (ConnectException exception)
             {
@@ -194,10 +209,10 @@ namespace GuiForFtpClient
         /// на которую смотрит клиент.
         /// </summary>
         /// <param name="fileInfo">Информация о файле.</param>
-        public void DownloadFiles(FileInfo fileInfo)
+        public void DownloadFiles(FileInfo fileInfo, Dispatcher dispatcher)
         {
             var listOfFiles = new List<FileInfo>();
-            ServerInfo serverInfo = new ServerInfo(HostName, HostPort, PathToDownload, Dispatcher);
+            ServerInfo serverInfo = new ServerInfo(HostName, HostPort, PathToDownload, dispatcher);
 
             if (fileInfo != null)
             {
