@@ -51,8 +51,16 @@ namespace SimpleFtpClient
             TcpClient client = null;
             const char request = '1';
 
-            client = await Task.Factory.StartNew(() => new TcpClient(serverInfo.HostName, serverInfo.HostPort));
-            
+            try
+            {
+                client = await Task.Factory.StartNew(()
+                    => new TcpClient(serverInfo.HostName, serverInfo.HostPort));
+            }
+            catch (SocketException exception)
+            {
+                throw new ConnectException("Не удалось подключиться к серверу", exception);
+            }
+
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
             var streamReader = new StreamReader(client.GetStream());
 
