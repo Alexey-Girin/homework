@@ -176,7 +176,7 @@ namespace GuiForFtpClient
 
             try
             {
-                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort, dispatcher));
+                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort));
             }
             catch (ConnectException exception)
             {

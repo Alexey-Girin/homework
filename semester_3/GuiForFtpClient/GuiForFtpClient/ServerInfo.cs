@@ -22,18 +22,20 @@ namespace SimpleFtpClient
         /// </summary>
         public string PathToDownload { get; } = null;
 
-        public Dispatcher Dispatcher { get; }
+        /// <summary>
+        /// GUI-тред.
+        /// </summary>
+        public Dispatcher Dispatcher { get; } = null;
 
         /// <summary>
         /// Конструктор экземпляра класса <see cref="ServerInfo"/>.
         /// </summary>
         /// <param name="hostName">Имя сервера.</param>
         /// <param name="hostPort">Порт, прослушиваемый сервером.</param>
-        public ServerInfo(string hostName, string hostPort, Dispatcher dispatcher)
+        public ServerInfo(string hostName, string hostPort)
         {
             HostName = hostName;
             HostPort = int.Parse(hostPort);
-            Dispatcher = dispatcher;
         }
 
         /// <summary>
