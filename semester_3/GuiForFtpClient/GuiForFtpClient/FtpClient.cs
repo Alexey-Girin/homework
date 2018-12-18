@@ -3,7 +3,6 @@ using System.IO;
 using System.Net.Sockets;
 using SimpleFtpClient.Exceptions;
 using System.Collections.ObjectModel;
-using System.Windows;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -12,7 +11,7 @@ namespace SimpleFtpClient
     /// <summary>
     /// FTP-клиент.
     /// </summary>
-    public class FtpClient : DependencyObject
+    public class FtpClient
     {
         /// <summary>
         /// Коллекция скачиваемых файлов.
@@ -54,11 +53,12 @@ namespace SimpleFtpClient
 
             try
             {
-                client = new TcpClient(serverInfo.HostName, serverInfo.HostPort);
+                client = await serverInfo.Dispatcher.InvokeAsync(
+                    () => new TcpClient(serverInfo.HostName, serverInfo.HostPort));
             }
-            catch (SocketException)
+            catch (SocketException exception)
             {
-                throw new ConnectException("Не удалось подключиться к серверу");
+                throw new ConnectException("Не удалось подключиться к серверу", exception);
             }
 
             var streamWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
@@ -73,10 +73,10 @@ namespace SimpleFtpClient
             {
                 size = int.Parse(await streamReader.ReadLineAsync());
             }
-            catch (ArgumentNullException)
+            catch (ArgumentNullException exception)
             {
                 client.Close();
-                throw new ServerErrorException("Не удалось выполнить запрос");
+                throw new ServerErrorException("Не удалось выполнить запрос", exception);
             }
 
             if (size == -1)
@@ -85,17 +85,17 @@ namespace SimpleFtpClient
                 throw new DirectoryNotExistException("Не удалось выполнить запрос");
             }
 
-            var Files = new List<FileInfo>() { new FileInfo("...", true) };
+            var listOfFiles = new List<FileInfo>();
 
             for (int i = 0; i < size; i++)
             {
                 string fileName = await streamReader.ReadLineAsync();
                 bool IsDir = "True" == await streamReader.ReadLineAsync();
-                Files.Add(new FileInfo(fileName, IsDir));
+                listOfFiles.Add(new FileInfo(fileName, IsDir));
             }
 
             client.Close();
-            return Files;
+            return listOfFiles;
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace SimpleFtpClient
             }
             catch (SocketException exception)
             {
-                await Dispatcher.InvokeAsync(()
+                await serverInfo.Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
                         $"Не удалось подключиться к серверу. Файл: {fileInfo.Path}")));
                 return;
@@ -135,7 +135,7 @@ namespace SimpleFtpClient
             catch (ArgumentNullException exception)
             {
                 client.Close();
-                await Dispatcher.InvokeAsync(()
+                await serverInfo.Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
                         $"Не удалось выполнить запрос для {fileInfo.Path}")));
                 return;
@@ -144,13 +144,13 @@ namespace SimpleFtpClient
             if (size == -1)
             {
                 client.Close();
-                await Dispatcher.InvokeAsync(()
+                await serverInfo.Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(null,
                         $"Не удалось выполнить запрос для {fileInfo.Path}")));
                 return;
             }
 
-            await DownloadFile(serverInfo.PathToDownload, client, fileInfo);
+            await DownloadFile(serverInfo, client, fileInfo);
 
             client.Close();
         }
@@ -161,13 +161,17 @@ namespace SimpleFtpClient
         /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
         /// <param name="client">Клиент.</param>
         /// <param name="fileInfo">Информация, необходимая для скачивания файла.</param>
-        private async Task DownloadFile(string pathToDownload, TcpClient client, FileInfo fileInfo)
+        private async Task DownloadFile(
+            ServerInfo serverInfo,
+            TcpClient client,
+            FileInfo fileInfo)
         {
             FileStream fileStream = null;
+            string pathToDownload = serverInfo.PathToDownload;
 
             if (pathToDownload != string.Empty)
             {
-                pathToDownload = $"{pathToDownload}\\{fileInfo.FileName}";
+                pathToDownload = $"{serverInfo.PathToDownload}\\{fileInfo.FileName}";
             }
 
             try
@@ -176,21 +180,21 @@ namespace SimpleFtpClient
             }
             catch (Exception exception)
             {
-                await Dispatcher.InvokeAsync(()
+                await serverInfo.Dispatcher.InvokeAsync(()
                     => DownloadErrors.Add(new FileDownloadError(exception,
                         $"Не удалось скачать файл - {fileInfo.Path}\n{exception.Message}")));
                 return;
             }
 
-            Dispatcher.Invoke(() => FilesWhichDownloadingNow.Add(fileInfo.Path));
+            serverInfo.Dispatcher.Invoke(() => FilesWhichDownloadingNow.Add(fileInfo.Path));
 
             await client.GetStream().CopyToAsync(fileStream);
             await fileStream.FlushAsync();
 
             fileStream.Close();
 
-            Dispatcher.Invoke(() => FilesWhichDownloadingNow.Remove(fileInfo.Path));
-            Dispatcher.Invoke(() => FilesWhichDownloaded.Add(fileInfo.Path));
+            serverInfo.Dispatcher.Invoke(() => FilesWhichDownloadingNow.Remove(fileInfo.Path));
+            serverInfo.Dispatcher.Invoke(() => FilesWhichDownloaded.Add(fileInfo.Path));
         }
     }
 }

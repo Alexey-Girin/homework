@@ -1,4 +1,6 @@
-﻿namespace SimpleFtpClient
+﻿using System.Windows.Threading;
+
+namespace SimpleFtpClient
 {
     /// <summary>
     /// Информация, необходимая для выполнения запросов Get и List в <see cref="FtpClient"/>.
@@ -20,15 +22,18 @@
         /// </summary>
         public string PathToDownload { get; } = null;
 
+        public Dispatcher Dispatcher { get; }
+
         /// <summary>
         /// Конструктор экземпляра класса <see cref="ServerInfo"/>.
         /// </summary>
         /// <param name="hostName">Имя сервера.</param>
         /// <param name="hostPort">Порт, прослушиваемый сервером.</param>
-        public ServerInfo(string hostName, string hostPort)
+        public ServerInfo(string hostName, string hostPort, Dispatcher dispatcher)
         {
             HostName = hostName;
             HostPort = int.Parse(hostPort);
+            Dispatcher = dispatcher;
         }
 
         /// <summary>
@@ -37,11 +42,12 @@
         /// <param name="hostName">Имя сервера.</param>
         /// <param name="hostPort">Порт, прослушиваемый сервером.</param>
         /// <param name="pathToDownload">Путь к месту скачивания файла.</param>
-        public ServerInfo(string hostName, string hostPort, string pathToDownload)
+        public ServerInfo(string hostName, string hostPort, string pathToDownload, Dispatcher dispatcher)
         {
             HostName = hostName;
             HostPort = int.Parse(hostPort);
             PathToDownload = pathToDownload;
+            Dispatcher = dispatcher;
         }
     }
 }

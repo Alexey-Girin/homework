@@ -22,5 +22,15 @@ namespace SimpleFtpClient.Exceptions
             : base(message)
         {
         }
+
+        /// <summary>
+        /// Конструктор экземпляра класса <see cref="ServerErrorException"/>.
+        /// </summary>
+        /// <param name="message">Сообщение об исключении.</param>
+        /// <param name="innerException">Внутреннее исключение.</param>
+        public ServerErrorException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 }

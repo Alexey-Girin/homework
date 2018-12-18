@@ -64,6 +64,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Extentions\ObservableCollectionExtention.cs" />
     <Compile Include="FileDownloadError.cs" />
     <Compile Include="ServerInfo.cs" />
     <Page Include="MainWindow.xaml">

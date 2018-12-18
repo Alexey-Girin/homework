@@ -5,13 +5,16 @@ using System.Threading.Tasks;
 using System.Windows;
 using SimpleFtpClient;
 using SimpleFtpClient.Exceptions;
+using GuiForFtpClient.Extentions;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace GuiForFtpClient
 {
     /// <summary>
     /// View Model для FTP-клиента.
     /// </summary>
-    public class ClientViewModel : DependencyObject
+    public class ClientViewModel : DependencyObject, INotifyPropertyChanged
     {
         /// <summary>
         /// FTP-клиент.
@@ -37,94 +40,77 @@ namespace GuiForFtpClient
         /// <summary>
         /// Коллекция ошибок, возникших при скачивании файлов.
         /// </summary>
-        public ObservableCollection<FileDownloadError> DownloadErrors { get; }
+        public ObservableCollection<FileDownloadError> DownloadErrors { get; } 
 
         /// <summary>
-        /// DependencyProperty для директории, на которую "смотрит" клиент.
+        /// Объект, необходимый для уведомления об изменении свойств. 
         /// </summary>
-        public static readonly DependencyProperty CurrentDirectoryProperty;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
-        /// DependencyProperty для адреса сервера.
-        /// </summary>
-        public static readonly DependencyProperty HostNameProperty;
-
-        /// <summary>
-        /// DependencyProperty для порта, прослушиваемого сервером.
-        /// </summary>
-        public static readonly DependencyProperty HostPortProperty;
-
-        /// <summary>
-        /// DependencyProperty для пути к месту скачивания файлов.
-        /// </summary>
-        public static readonly DependencyProperty PathToDownloadProperty;
-
-        /// <summary>
-        /// Директории, на которую "смотрит" клиент.
+        /// Директория, на которую "смотрит" клиент.
         /// </summary>
         public string CurrentDirectory
         {
-            get { return (string)GetValue(CurrentDirectoryProperty); }
-            set { SetValue(CurrentDirectoryProperty, value); }
+            get => currentDirectory;
+            set
+            {
+                currentDirectory = value;
+                PropertyChanged(this, new PropertyChangedEventArgs("CurrentDirectory"));
+            }
         }
+
+        private string currentDirectory;
 
         /// <summary>
         /// Адрес сервера.
         /// </summary>
         public string HostName
         {
-            get { return (string)GetValue(HostNameProperty); }
-            set { SetValue(HostNameProperty, value); }
+            get => hostName;
+            set
+            {
+                hostName = value;
+                PropertyChanged(this, new PropertyChangedEventArgs("HostName"));
+            }
         }
+
+        private string hostName;
 
         /// <summary>
         /// Порт, прослушиваемый сервером.
         /// </summary>
         public string HostPort
         {
-            get { return (string)GetValue(HostPortProperty); }
-            set { SetValue(HostPortProperty, value); }
+            get => hostPort;
+            set
+            {
+                hostPort = value;
+                PropertyChanged(this, new PropertyChangedEventArgs("HostPort"));
+            }
         }
+
+        private string hostPort;
 
         /// <summary>
         /// Путь к месту скачивания файлов.
         /// </summary>
         public string PathToDownload
         {
-            get { return (string)GetValue(PathToDownloadProperty); }
-            set { SetValue(PathToDownloadProperty, value); }
+            get => pathToDownload;
+            set
+            {
+                pathToDownload = value;
+                PropertyChanged(this, new PropertyChangedEventArgs("PathToDownload"));
+            }
         }
+
+        private string pathToDownload;
 
         /// <summary>
         /// Стек родительских папок для папки, на которую "смотрит" клиент.
         /// </summary>
         private Stack<string> pathHistory = new Stack<string>();
-
-        /// <summary>
-        /// Статический конструктор.
-        /// </summary>
-        static ClientViewModel()
-        {
-            CurrentDirectoryProperty = DependencyProperty.Register(
-                "CurrentDirectory",
-                typeof(string),
-                typeof(ClientViewModel));
-
-            HostNameProperty = DependencyProperty.Register(
-               "HostName",
-               typeof(string),
-               typeof(ClientViewModel));
-
-            HostPortProperty = DependencyProperty.Register(
-                "HostPort",
-                typeof(string),
-                typeof(ClientViewModel));
-
-            PathToDownloadProperty = DependencyProperty.Register(
-                "PathToDownload",
-                typeof(string),
-                typeof(ClientViewModel));
-        }
 
         /// <summary>
         /// Конструктор экзмепляра класса <see cref="ClientViewModel"/>.
@@ -175,7 +161,7 @@ namespace GuiForFtpClient
 
             try
             {
-                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort));
+                listOfFiles = await Client.List(path, new ServerInfo(HostName, HostPort, Dispatcher));
             }
             catch (ConnectException exception)
             {
@@ -189,7 +175,7 @@ namespace GuiForFtpClient
                 return;
             }
 
-            Files.Clear();
+            Files.Update();
             CurrentDirectory = path;
 
             foreach (var file in listOfFiles)
@@ -211,7 +197,7 @@ namespace GuiForFtpClient
         public void DownloadFiles(FileInfo fileInfo)
         {
             var listOfFiles = new List<FileInfo>();
-            ServerInfo serverInfo = new ServerInfo(HostName, HostPort, PathToDownload);
+            ServerInfo serverInfo = new ServerInfo(HostName, HostPort, PathToDownload, Dispatcher);
 
             if (fileInfo != null)
             {
