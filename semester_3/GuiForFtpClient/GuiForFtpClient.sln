@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2046
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuiForFtpClient", "GuiForFtpClient\GuiForFtpClient.csproj", "{3C751ED7-48B7-424D-92F0-F7EBB9AB78B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C751ED7-48B7-424D-92F0-F7EBB9AB78B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C751ED7-48B7-424D-92F0-F7EBB9AB78B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C751ED7-48B7-424D-92F0-F7EBB9AB78B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C751ED7-48B7-424D-92F0-F7EBB9AB78B3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7C86C2FA-7DE4-4360-83B8-72FD6AE159FD}
+	EndGlobalSection
+EndGlobal

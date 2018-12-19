@@ -1,0 +1,138 @@
+﻿<Window x:Class="GuiForFtpClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GuiForFtpClient"
+        mc:Ignorable="d"
+        Title="FTP Client" Height="450" Width="900" MinHeight="450" MinWidth="900">
+    
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="MaxHeight" Value="25"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="MaxHeight" Value="25"/>
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style x:Key="SimpleTextBlockStyle">
+            <Setter Property="TextBlock.Margin" Value="3"/>
+        </Style>
+    </Window.Resources>
+    
+    <TabControl>
+        <TabItem Header="Главный экран">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                    <RowDefinition Height="2*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="14*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Текущая папка:" TextAlignment="Left"/>
+                    <TextBlock Text="{Binding CurrentDirectory}"  Grid.Column="1"
+                               TextAlignment="Left"/>
+                    <Button x:Name="Download" Content="Скачать все" Grid.Column="2"
+                            Click="DownloadButtonClick"/>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox ItemsSource="{Binding Files}" Grid.ColumnSpan="2"
+                             MouseDoubleClick="ListOfFilesMouseDoubleClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Path=FileName}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Папка для скачивания:"/>
+                    <TextBox x:Name="pathToDownload" Text="{Binding PathToDownload, Mode=OneWayToSource}" 
+                     Grid.Column="1" Grid.ColumnSpan="3"/>
+
+                    <TextBlock Text="Адрес:" Grid.Row="1"/>
+                    <TextBox x:Name="hostName" Text="{Binding HostName, Mode=OneWayToSource}"
+                     Grid.Row="1" Grid.Column="1"/>
+
+                    <TextBlock Text="Порт:" Grid.Row="1" Grid.Column="2"/>
+                    <TextBox x:Name="hostPort" Text="{Binding HostPort, Mode=OneWayToSource}" 
+                     Grid.Row="1" Grid.Column="3"/>
+
+                    <Button Name="connectButton" Content="Подключиться" Click="ConnectButtonClick" 
+                     Grid.Row="0" Grid.Column="4" Grid.RowSpan="2"/>
+                </Grid>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Прогресс">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="7*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Скачиваются:" Grid.Row="0"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <ListBox ItemsSource="{Binding FilesWhichDownloadingNow}" Grid.Row="1"/>
+                <TextBlock Text="Скачались:" Grid.Row="2"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <ListBox ItemsSource="{Binding FilesWhichDownloaded}" Grid.Row="3"/>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Ошибки загрузки">
+            <Grid>
+                <ListBox ItemsSource="{Binding DownloadErrors}" Grid.Row="3">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Path=FollowUp}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Справка">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="10*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Двойной щелчок ЛКМ по папке - переход к содержимому папки"
+                           Style="{StaticResource SimpleTextBlockStyle}"/>
+                <TextBlock Text="Двойной щелчок ЛКМ по файлу - скачивание файла"
+                           Style="{StaticResource SimpleTextBlockStyle}" Grid.Row="1"/>
+            </Grid>
+        </TabItem>
+    </TabControl>
+</Window>
