@@ -6,7 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Program.fs" />
+    <Compile Include="CheckPalindrome.fs" />
+    <Compile Include="MergeSort.fs" />
+    <Compile Include="FindFirstPosition.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fs30Unit.MsTest" Version="3.4.0" />
   </ItemGroup>
 
 </Project>
