@@ -1,8 +1,8 @@
 image: Visual Studio 2017 
 branches: 
   only:
-    - GuiForFtpClient
+    - homework-4.2
 before_build:
-  - nuget restore semester_3/GuiForFtpClient/GuiForFtpClient.sln
+  - nuget restore semester_4/homework_2/homework_2.sln
 build:
-  project: semester_3/GuiForFtpClient/GuiForFtpClient.sln
+  project: semester_4/homework_2/homework_2.sln
