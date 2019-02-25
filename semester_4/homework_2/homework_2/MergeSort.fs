@@ -8,7 +8,7 @@ module MergeSort =
             match list with
             | [] -> firstList, secondList
             | [item] -> item :: firstList, secondList
-            | _ -> split list.Tail.Tail (list.Head :: firstList) (list.Tail.Head :: secondList)
+            | firstItem :: secondItem :: tail -> split tail (firstItem :: firstList) (secondItem :: secondList)
         
         let rec merge firstList secondList resultList = 
             match firstList, secondList with
