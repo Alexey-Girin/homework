@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CheckPalindrome.fs" />
+    <Compile Include="MergeSort.fs" />
+    <Compile Include="FindFirstPosition.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fs30Unit.MsTest" Version="3.4.0" />
+  </ItemGroup>
+
+</Project>
