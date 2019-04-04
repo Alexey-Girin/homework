@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SequenceOfPrimes.fs" />
     <Compile Include="ParseTree.fs" />
     <Compile Include="MapTree.fs" />
     <Compile Include="NumberOfEven.fs" />
