@@ -21,31 +21,31 @@ module Directory =
     let fileName = "Data.dat"
     
     ///Добавить запись (имя и телефон)
-    let Add (directory : Directory) =
+    let add (directory : Directory) =
         let record = Console.ReadLine().Split[|' '|]
         if record.Length = 2 then directory.Add((record.[0], record.[1]))
     
     ///Найти телефон по имени
-    let FindByName (directory : Directory) =
+    let findByName (directory : Directory) =
         directory.FindByName(Console.ReadLine()) |> printfn "%A"
     
     ///Найти имя по телефону
-    let FindByPhone (directory : Directory) =
+    let findByPhone (directory : Directory) =
         directory.FindByPhone(Console.ReadLine()) |> printfn "%A"
     
     ///Вывести всё текущее содержимое базы
-    let GetAll (directory : Directory) =
+    let getAll (directory : Directory) =
         directory.GetAll |> printfn "%A"
     
     ///Cохранить текущие данные в файл
-    let SaveToFile (directory : Directory) =
+    let saveToFile (directory : Directory) =
         let fsOut = new FileStream(fileName, FileMode.Create)
         let formatter = new BinaryFormatter()
         formatter.Serialize(fsOut, directory.GetAll)
         fsOut.Close()
     
     ///Считать данные из файла
-    let TakeFromFile (directory : Directory) =
+    let takeFromFile (directory : Directory) =
         let fsIn = new FileStream(fileName, FileMode.Open)
         let formatter = new BinaryFormatter()
         let data = unbox<(string * string) list>(formatter.Deserialize(fsIn))
@@ -57,17 +57,17 @@ module Directory =
         let request = Console.ReadLine()
         match request with 
         | "1" -> None
-        | "2" -> Add directory
+        | "2" -> add directory
                  requestHandler directory
-        | "3" -> FindByName directory
+        | "3" -> findByName directory
                  requestHandler directory
-        | "4" -> FindByPhone directory
+        | "4" -> findByPhone directory
                  requestHandler directory
-        | "5" -> GetAll directory
+        | "5" -> getAll directory
                  requestHandler directory
-        | "6" -> SaveToFile directory
+        | "6" -> saveToFile directory
                  requestHandler directory
-        | "7" -> TakeFromFile directory 
+        | "7" -> takeFromFile directory 
                  requestHandler directory
         | _ -> requestHandler directory
 
