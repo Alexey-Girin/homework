@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="File1.fs" />
     <Compile Include="PointFree.fs" />
     <Compile Include="Stack.fs" />
     <Compile Include="BracketSequence.fs" />
