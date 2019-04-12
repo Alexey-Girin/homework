@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Square.fs" />
+    <Compile Include="Test.fs" />
   </ItemGroup>
 
 </Project>

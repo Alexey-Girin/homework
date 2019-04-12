@@ -2,7 +2,7 @@
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 open FsUnit.MsTest
-open Test.Square
+open Test.Test
 
 [<TestClass>]
 type SquareTests () =
@@ -14,3 +14,7 @@ type SquareTests () =
     [<TestMethod>]
     member this.``Check getSquare with correct data`` () =
         getSquare 4 |> should equal ["****"; "*  *"; "*  *"; "****"]
+
+    [<TestMethod>]
+    member this.``Check Fibonacci`` () =
+        getSumFibonacci |> should equal 1089154
