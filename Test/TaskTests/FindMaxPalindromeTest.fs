@@ -5,7 +5,7 @@ open FsUnit.MsTest
 open TestNamespace.FindMaxPalindrome
 
 [<TestClass>]
-type NumberOfEvenTests () =
+type FindMaxPalindromeTests () =
 
     [<TestMethod>]
     member this.``findMaxPalindrome should return 580085`` () =
