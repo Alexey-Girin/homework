@@ -8,10 +8,10 @@ open Homework_3.SequenceOfPrimes
 type SequenceOfPrimesTests () =
 
     [<TestMethod>]
-    member this.``Check primes`` () =
-        Seq.item 0 generateSequenceOfPrimes |> should equal 2
-        Seq.item 4 generateSequenceOfPrimes |> should equal 11
-        Seq.item 9 generateSequenceOfPrimes |> should equal 29
-        Seq.item 49 generateSequenceOfPrimes |> should equal 229
-        Seq.item 99 generateSequenceOfPrimes |> should equal 541
-        Seq.item 499 generateSequenceOfPrimes |> should equal 3571
+    member this.``Check primes``() =
+        generateSequenceOfPrimes () |> Seq.item 0 |> should equal 2
+        generateSequenceOfPrimes () |> Seq.item 4 |> should equal 11
+        generateSequenceOfPrimes () |> Seq.item 9 |> should equal 29
+        generateSequenceOfPrimes () |> Seq.item 49 |> should equal 229
+        generateSequenceOfPrimes () |> Seq.item 99 |> should equal 541
+        generateSequenceOfPrimes () |> Seq.item 499 |> should equal 3571

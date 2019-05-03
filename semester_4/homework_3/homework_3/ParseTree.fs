@@ -2,7 +2,7 @@
 
 module ParseTree = 
 
-    ///Дерево разбора арифметического выражения
+    /// Дерево разбора арифметического выражения
     type ParseTree =
         | Value of double 
         | Addition of ParseTree * ParseTree
@@ -10,7 +10,7 @@ module ParseTree =
         | Multiplication of ParseTree * ParseTree
         | Division of ParseTree * ParseTree
 
-    ///Вычисление по дереву разбора 
+    /// Вычисление по дереву разбора 
     let rec eval tree = 
         match tree with
         | Value value -> value
@@ -19,6 +19,7 @@ module ParseTree =
         | Multiplication (leftSubtree, rightSubtree) -> eval leftSubtree * eval rightSubtree
         | Division (leftSubtree, rightSubtree) -> 
             let divisor = eval rightSubtree
-            if divisor = 0.0 then raise (System.DivideByZeroException())
+            if divisor = 0.0 
+            then raise (System.DivideByZeroException())
             else (eval leftSubtree) / divisor
 
