@@ -2,28 +2,28 @@
 
 module Stack =
 
-    ///Стек
+    /// Стек
     type Stack<'a> =
         | Empty
         | Stack of 'a * Stack<'a>
     
-    ///Добавить элемент в стек
+    /// Добавить элемент в стек
     let push value stack =
         Stack (value, stack)
     
-    ///Прочитать головной элемент стека
+    /// Прочитать головной элемент стека
     let top stack =
         match stack with
         | Empty -> None
         | Stack (element, _) -> Some(element)
 
-    ///Удалить головной элемент стека
+    /// Удалить головной элемент стека
     let pop stack =
         match stack with
         | Empty -> None
         | Stack (_, residue) -> Some(residue)
     
-    ///Проверка стека на пустоту 
+    /// Проверка стека на пустоту 
     let isEmpty stack =
         (stack = Empty)
 
