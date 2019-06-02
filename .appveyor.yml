@@ -3,6 +3,6 @@ branches:
   only:
     - homework-4.4
 before_build:
-  - nuget restore semester_4/homework_4/Task_3/Tasl_3.sln
+  - nuget restore semester_4/homework_4/Task_3/Task_3.sln
 build:
-  project: semester_4/homework_4/Task_3/Tasl_3.sln
+  project: semester_4/homework_4/Task_3/Task_3.sln
