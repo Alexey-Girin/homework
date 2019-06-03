@@ -9,7 +9,7 @@ type InterpreterTests () =
 
     [<TestMethod>]
     member this.``Check simple term`` () = 
-        let term = Application (Abstraction ('X',Variable 'X'),Abstraction ('X',Variable 'X'))
+        let term = Application (Abstraction ('x',Variable 'x'),Abstraction ('x',Variable 'x'))
         let result = Abstraction ('X',Variable 'X')
         term |> reduction |> should equal result
     
