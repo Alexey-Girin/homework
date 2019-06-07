@@ -4,10 +4,10 @@
 
 \begin{flushleft}
 
-(\lambda a\:b\:c.a\:c)\:(\lambda x\:y.x)\:(\lambda u\:v.u) \rightarrow \\ 
-(\lambda b\:c.(\lambda x\:y.x)\:c)\:(\lambda u\:v.u) \rightarrow \\ 
-(\lambda c.(\lambda x\:y.x)\:c) \rightarrow \\  
-(\lambda c.c) 
+($\lambda$ x y z.x z (y z)) ($\lambda$ a b.a) ($\lambda$ u v.u) = \\ 
+($\lambda$ y z.($\lambda$ a b.a) z (y z)) ($\lambda$ u v.u) = \\ 
+($\lambda$ z.($\lambda$ a b.a) z (($\lambda$ u v.u) z)) = \\ 
+($\lambda$ z.z)
 
 \end{flushleft}
 
