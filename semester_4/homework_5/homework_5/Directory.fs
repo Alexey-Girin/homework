@@ -5,85 +5,71 @@ module Directory =
     open System
     open System.IO
     open System.Runtime.Serialization.Formatters.Binary
-
-    /// Класс справочника
-    type Directory() =
-        
-        /// Данные справочника
-        let mutable data : (string * string) list = List.Empty
-        
-        /// Добавить запись в справочник
-        member directory.Add(name, phone) = data <- (name, phone) :: data
-
-        /// Поиск по имени
-        member directory.FindByName name = 
-            data 
-            |> List.fold (fun nameList record -> if fst record = name then snd record :: nameList else nameList) []
-        
-        /// Поиск по телефону
-        member directory.FindByPhone phone = 
-            data 
-            |> List.fold (fun phoneList record -> if snd record = phone then fst record :: phoneList else phoneList) []
-        
-        /// Получить все данные 
-        member directory.GetAll () = data
-
-        /// Обновить данные
-        member directory.Update newData = data <- newData
     
     /// Имя файла
     let fileName = "Data.dat"
     
     /// Добавить запись (имя и телефон)
-    let add (directory : Directory) =
-        let record = Console.ReadLine().Split[|' '|]
-        if record.Length = 2 then directory.Add((record.[0], record.[1]))
+    let add (data : (string * string) list) (record : string array) =
+        if record.Length = 2 
+        then 
+            let name = record.[0]
+            let phone = record.[1]
+            (name, phone) :: data
+        else 
+            data
     
     /// Найти телефон по имени
-    let findByName (directory : Directory) =
-        directory.FindByName(Console.ReadLine()) |> printfn "%A"
+    let findByName (data : (string * string) list) (name : string) =
+        data 
+        |> List.fold (fun nameList record -> if fst record = name then snd record :: nameList else nameList) []
     
     /// Найти имя по телефону
-    let findByPhone (directory : Directory) =
-        directory.FindByPhone(Console.ReadLine()) |> printfn "%A"
-    
-    /// Вывести всё текущее содержимое базы
-    let getAll (directory : Directory) =
-        directory.GetAll |> printfn "%A"
+    let findByPhone (data : (string * string) list) (phone : string) =
+        data 
+        |> List.fold (fun phoneList record -> if snd record = phone then fst record :: phoneList else phoneList) []
     
     /// Cохранить текущие данные в файл
-    let saveToFile (directory : Directory) =
+    let saveToFile data =
         let fsOut = new FileStream(fileName, FileMode.Create)
         let formatter = new BinaryFormatter()
-        formatter.Serialize(fsOut, directory.GetAll)
+        formatter.Serialize(fsOut, data)
         fsOut.Close()
     
     /// Считать данные из файла
-    let takeFromFile (directory : Directory) =
+    let takeFromFile () =
         let fsIn = new FileStream(fileName, FileMode.Open)
         let formatter = new BinaryFormatter()
         let data = unbox<(string * string) list>(formatter.Deserialize(fsIn))
         fsIn.Close()
-        directory.Update data
+        data
     
     /// Обработка запросов 
-    let rec requestHandler (directory : Directory) =
+    let rec requestHandler (data : (string * string) list) =
         let request = Console.ReadLine()
         match request with 
         | "1" -> ()
-        | "2" -> add directory
-                 requestHandler directory
-        | "3" -> findByName directory
-                 requestHandler directory
-        | "4" -> findByPhone directory
-                 requestHandler directory
-        | "5" -> getAll directory
-                 requestHandler directory
-        | "6" -> saveToFile directory
-                 requestHandler directory
-        | "7" -> takeFromFile directory 
-                 requestHandler directory
-        | _ -> requestHandler directory
+        | "2" -> 
+            let record = Console.ReadLine().Split[|' '|]
+            requestHandler <| add data record 
+        | "3" ->
+            let name = Console.ReadLine()
+            findByName data name |> printfn "%A"
+            requestHandler data
+        | "4" -> 
+            let phone = Console.ReadLine()
+            findByPhone data phone |> printfn "%A"
+            requestHandler data
+        | "5" ->
+            data |> printfn "%A"
+            requestHandler data
+        | "6" -> 
+            saveToFile data
+            requestHandler data
+        | "7" -> 
+            requestHandler <| takeFromFile ()
+        | _ -> 
+            requestHandler data
 
-    let directory = new Directory()
-    requestHandler directory
+    /// Начало работы
+    let start () = requestHandler List.Empty
