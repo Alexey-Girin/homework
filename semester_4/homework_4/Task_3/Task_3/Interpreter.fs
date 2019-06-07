@@ -8,14 +8,14 @@ module Interpreter =
         | Application of Term * Term
         | Abstraction of char * Term    
     
-    /// Переименование связанных переменных
+    /// Переименование связанных переменных. Приведение свободных к нижнему регистру
     let alphaTransform initialTerm =
         let rec transform bypassTerm boundVariables =
             match bypassTerm with
             | Variable var -> 
                 if List.exists (fun elem -> elem = var) boundVariables 
                 then System.Char.ToUpper(var) |> Variable
-                else Variable var
+                else System.Char.ToLower(var) |> Variable 
             | Application (leftTerm, rightTerm) -> 
                 Application (transform leftTerm boundVariables, transform rightTerm boundVariables)
             | Abstraction (var, term) ->
