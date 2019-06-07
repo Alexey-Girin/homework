@@ -34,7 +34,9 @@ module Interpreter =
             let newRightTerm = substitution var rightTerm substitutedTerm
             Application (newLeftTerm, newRightTerm)
         | Abstraction (_var, _term) ->
-            Abstraction (_var, substitution var _term substitutedTerm)
+            match _var with
+            | _var when _var = var -> Abstraction (_var, _term)
+            | _ -> Abstraction (_var, substitution var _term substitutedTerm)
 
     /// Выполнение бета-редукции
     let reduction initialTerm = 

@@ -8,9 +8,9 @@ open Homework_4.Interpreter
 type InterpreterTests () =
 
     [<TestMethod>]
-    member this.``Check simple term`` () = 
-        let term = Application (Abstraction ('x',Variable 'x'),Abstraction ('x',Variable 'x'))
-        let result = Abstraction ('X',Variable 'X')
+    member this.``Check term wherein several identical variables of different degrees of connectedness`` () = 
+        let term = Application (Abstraction ('x',Abstraction ('x',Variable 'x')),Variable 'y')
+        let result = Abstraction ('X', Variable('X'))
         term |> reduction |> should equal result
     
     [<TestMethod>]
