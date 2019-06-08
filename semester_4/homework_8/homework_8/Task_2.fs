@@ -1,4 +1,4 @@
-﻿namespace Homework8
+﻿namespace Homework_8
 
 module Task_2 = 
 
@@ -30,10 +30,10 @@ module Task_2 =
             let regex = Regex(pattern)
             let matches = regex.Matches(initialPage)
             let pages = [for _match in matches -> _match.Groups.[1].ToString() |> getPageAsync]
-            Async.Parallel pages |> Async.RunSynchronously |> ignore
+            Async.Parallel pages |> Async.RunSynchronously |> Array.toList
     
         let initialPage = url |> getPageAsync |> Async.RunSynchronously 
     
         match initialPage with
-        | None -> ()
-        | Some page -> getSecondaryPages page
+        | None -> []
+        | Some page -> initialPage :: getSecondaryPages page

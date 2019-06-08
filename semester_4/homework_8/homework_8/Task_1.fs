@@ -1,6 +1,7 @@
 ﻿namespace Homework_8
 
 module Task_1 =
+    open System.Threading
     
     /// Интерфейс, представляющий ленивое вычисление 
     type ILazy<'a> =
@@ -26,11 +27,11 @@ module Task_1 =
             member this.Get() =
                 event.WaitOne() |> ignore
                 try
-                    match result with
+                    match Volatile.Read(&result) with
                     | None -> 
                         let currentResult = supplier ()
-                        result <- Some currentResult
-                        result.Value
+                        Volatile.Write(&result, Some currentResult)
+                        Volatile.Read(&result).Value
                     | Some value -> value
                 finally 
                     event.Set() |> ignore
@@ -38,14 +39,12 @@ module Task_1 =
     /// Lock-free версия 
     type LockFreeLazy<'a>(supplier : unit -> 'a) =
         let mutable result = None
-        let mutable isDone = 0
         interface ILazy<'a> with
             member this.Get() =
-                while isDone = 0 do
-                    let currentResult = supplier ()
-                    System.Threading.Interlocked.CompareExchange(&result, Some currentResult, None) |> ignore
-                    System.Threading.Interlocked.CompareExchange(&isDone, 1, 0) |> ignore
-                result.Value
+                let currentResult = Some(supplier ())
+                let mainResult = Volatile.Read(&result)
+                System.Threading.Interlocked.CompareExchange(&result, currentResult, mainResult) |> ignore
+                Volatile.Read(&result).Value
     
     /// Создает объекты
     type LazyFactory<'a>(supplier : unit -> 'a) =
