@@ -4,11 +4,16 @@ module Calculate =
 
     open System
 
+    let convert (x : string) =
+        match Int32.TryParse x with
+        | true, value -> Some(value)
+        | _ -> None
+
     /// Workflow, выполняющий вычисления с числами, заданными в виде строк
-    type CalculateBuilder() =
-        let parse string = try string |> int |> Some with | _ -> None    
+    type CalculateBuilder() =   
         member this.Bind(x : string, f) =
-            match parse x with
+            let convertedX = convert x
+            match convertedX with
             | None -> None
-            | Some number -> f number
+            | Some value -> f value
         member this.Return(x) = Some(x)
