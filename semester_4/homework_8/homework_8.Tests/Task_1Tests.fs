@@ -58,11 +58,9 @@ type Task_1Tests () =
         worker.RunWorkerAsync()
     
     [<TestMethod>]
-    member this.``LockFreeLaze should calсulate only once`` () = 
-        let mutable count = 0
-        let supplier = (fun () -> 
-            count <- count + 1
-            count |> should lessThan 2)
-        let calculator = LazyFactory.CreateLockFreeLazy(supplier)     
-        for i in 1 .. 100 do 
-            calculator.Get()
+    member this.``LockFreeLaze should calсulate only once`` () =
+        let random = new System.Random()
+        let supplier = (fun () -> random.Next(1, 100)) 
+        let calculator = LazyFactory.CreateLockFreeLazy(supplier)
+        let result = calculator.Get()
+        ThreadPool.QueueUserWorkItem(fun object -> calculator.Get() |> should equal result) |> ignore

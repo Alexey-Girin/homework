@@ -21,30 +21,32 @@ module Task_1 =
             
     /// Многопоточная версия 
     type MultiThreadedLazy<'a>(supplier : unit -> 'a) =
+        [<VolatileField>]
         let mutable result = None
         let event = new System.Threading.AutoResetEvent(true)
         interface ILazy<'a> with
             member this.Get() =
                 event.WaitOne() |> ignore
                 try
-                    match Volatile.Read(&result) with
+                    match result with
                     | None -> 
                         let currentResult = supplier ()
-                        Volatile.Write(&result, Some currentResult)
-                        Volatile.Read(&result).Value
+                        result <- Some currentResult
+                        result.Value
                     | Some value -> value
                 finally 
                     event.Set() |> ignore
 
     /// Lock-free версия 
     type LockFreeLazy<'a>(supplier : unit -> 'a) =
+        [<VolatileField>]
         let mutable result = None
         interface ILazy<'a> with
             member this.Get() =
                 let currentResult = Some(supplier ())
-                let mainResult = Volatile.Read(&result)
+                let mainResult = result
                 System.Threading.Interlocked.CompareExchange(&result, currentResult, mainResult) |> ignore
-                Volatile.Read(&result).Value
+                result.Value
     
     /// Создает объекты
     type LazyFactory<'a>(supplier : unit -> 'a) =
