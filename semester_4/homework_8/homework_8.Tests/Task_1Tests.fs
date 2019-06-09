@@ -5,6 +5,7 @@ open FsUnit.MsTest
 open Homework_8.Task_1
 open System.ComponentModel
 open System.Threading
+open System
 
 [<TestClass>]
 type Task_1Tests () =
@@ -34,17 +35,7 @@ type Task_1Tests () =
             args.Result <- box <| calculator.Get())
         worker.RunWorkerCompleted.Add(fun args ->
             args.Result |> should equal 1)
-        worker.RunWorkerAsync()
-    
-    [<TestMethod>]
-    member this.``MultiThreadedLazy should calсulate only once`` () = 
-        let mutable count = 0
-        let supplier = (fun () -> 
-            count <- count + 1
-            count |> should lessThan 2)
-        let calculator = LazyFactory.CreateMultiThreadedLazy(supplier)     
-        for i in 1 .. 100 do 
-            calculator.Get()
+        worker.RunWorkerAsync() 
     
     [<TestMethod>]
     member this.``Check LockFreeLaze`` () = 
@@ -59,8 +50,13 @@ type Task_1Tests () =
     
     [<TestMethod>]
     member this.``LockFreeLaze should calсulate only once`` () =
-        let random = new System.Random()
-        let supplier = (fun () -> random.Next(1, 100)) 
+        let random = new Random()
+        let supplier = (fun () -> random.Next()) 
         let calculator = LazyFactory.CreateLockFreeLazy(supplier)
-        let result = calculator.Get()
-        ThreadPool.QueueUserWorkItem(fun object -> calculator.Get() |> should equal result) |> ignore
+        let mutable results = List.Empty
+        let threads = [ for i in 1 .. 100 -> new Thread (fun () -> results <- calculator.Get() :: results) ]
+        threads |> List.iter (fun (thread : Thread) -> thread.Start())
+        threads |> List.iter (fun (thread : Thread) -> thread.Join())
+        let checkResult = calculator.Get()
+        for result in results do
+            result |> should equal checkResult 
