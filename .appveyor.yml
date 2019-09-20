@@ -1,8 +1,8 @@
 image: Visual Studio 2017 
 branches: 
   only:
-    - hw-4.5
+    - homework-4.8
 before_build:
-  - nuget restore semester_4/homework_5/homework_5.sln
+  - nuget restore semester_4/homework_8/homework_8.sln
 build:
-  project: semester_4/homework_5/homework_5.sln
+  project: semester_4/homework_8/homework_8.sln
