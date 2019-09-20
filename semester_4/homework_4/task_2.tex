@@ -1,0 +1,14 @@
+\documentclass{article}
+
+\begin{document}
+
+\begin{flushleft}
+
+($\lambda$ x y z.x z (y z)) ($\lambda$ a b.a) ($\lambda$ u v.u) = \\ 
+($\lambda$ y z.($\lambda$ a b.a) z (y z)) ($\lambda$ u v.u) = \\ 
+($\lambda$ z.($\lambda$ a b.a) z (($\lambda$ u v.u) z)) = \\ 
+($\lambda$ z.z)
+
+\end{flushleft}
+
+\end{document}
